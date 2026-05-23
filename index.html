@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truckers Corner — Explorador de Flujos de Trabajo</title>
+<style>
+  :root{
+    --biz:#2563eb; --biz-bg:#dbeafe;
+    --tech:#0d9488; --tech-bg:#ccfbf1;
+    --ext:#d97706; --ext-bg:#fef3c7;
+    --ink:#0f172a; --muted:#64748b; --line:#cbd5e1;
+    --bg:#f1f5f9; --card:#ffffff; --accent:#4f46e5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  .app{display:flex;height:100vh;overflow:hidden}
+
+  /* Sidebar */
+  .side{width:300px;flex-shrink:0;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;overflow-y:auto}
+  .side .brand{padding:18px 18px 4px}
+  .side .brand .logo{font-size:16px;font-weight:800;letter-spacing:.3px}
+  .side .brand .logo span{color:#818cf8}
+  .side .sub{font-size:11.5px;color:#94a3b8;padding:2px 18px 14px;line-height:1.5}
+  .side .sec{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:#64748b;padding:14px 18px 6px}
+  .flowbtn{display:block;width:100%;text-align:left;border:0;background:transparent;color:#cbd5e1;padding:9px 18px;font-size:13px;cursor:pointer;border-left:3px solid transparent;line-height:1.35}
+  .flowbtn:hover{background:#1e293b;color:#fff}
+  .flowbtn.active{background:#1e293b;color:#fff;border-left-color:var(--accent);font-weight:600}
+  .flowbtn .ic{margin-right:8px}
+  .navbtn{font-weight:600;color:#e2e8f0}
+  .legend{padding:6px 18px 14px;font-size:11.5px}
+  .legend .row{display:flex;align-items:center;gap:8px;margin:5px 0;color:#cbd5e1}
+  .dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+  .filterbtns{display:flex;gap:6px;padding:4px 18px 14px}
+  .filterbtns button{flex:1;font-size:11px;padding:6px 4px;border:1px solid #334155;background:#1e293b;color:#cbd5e1;border-radius:6px;cursor:pointer}
+  .filterbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .gloss{padding:0 18px 24px}
+  .gloss summary{cursor:pointer;padding:8px 0;color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:1px}
+  .gloss dt{font-weight:600;color:#fff;margin-top:9px;font-size:12px}
+  .gloss dd{margin:2px 0 0;color:#94a3b8;line-height:1.45;font-size:11.5px}
+
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .flowView{flex:1;display:flex;flex-direction:column;min-height:0}
+  .flowView.hide{display:none}
+  .flowhead{padding:16px 22px 12px;background:var(--card);border-bottom:1px solid var(--line)}
+  .flowhead h2{margin:0 0 5px;font-size:18px}
+  .flowhead p{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:1000px}
+  .flowhead .goal{margin-top:8px;font-size:12.5px;color:#3730a3;background:#eef2ff;border:1px solid #c7d2fe;border-radius:7px;padding:7px 10px;max-width:1000px;line-height:1.5}
+  .controls{display:flex;align-items:center;gap:8px;padding:10px 22px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .controls button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink)}
+  .controls button:hover{background:#f8fafc}
+  .controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .controls .counter{font-size:13px;color:var(--muted);margin-left:4px}
+  .controls .sp{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .controls select{padding:5px;border-radius:6px;border:1px solid var(--line)}
+  .progress{height:3px;background:#e2e8f0}
+  .progress .bar{height:100%;background:var(--accent);width:0;transition:width .35s ease}
+
+  .stage{flex:1;display:flex;min-height:0}
+  .diagram-wrap{flex:1;overflow:auto;padding:0 22px 40px;position:relative}
+  .diagram{position:relative;margin:0 auto}
+  .lifelines{position:absolute;top:0;left:0;pointer-events:none}
+  .head{position:absolute;top:14px;transform:translateX(-50%);width:170px;text-align:center}
+  .head .box{border-radius:9px;padding:8px 6px;font-size:12px;font-weight:600;line-height:1.2;border:1.5px solid}
+  .head .role{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;margin-top:3px;opacity:.8}
+  .head[data-type=business] .box{background:var(--biz-bg);border-color:var(--biz);color:#1e3a8a}
+  .head[data-type=tech] .box{background:var(--tech-bg);border-color:var(--tech);color:#115e59}
+  .head[data-type=external] .box{background:var(--ext-bg);border-color:var(--ext);color:#92400e}
+
+  .row{position:absolute;left:0;opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease}
+  .row.done{opacity:.55;transform:none}
+  .row.active{opacity:1;transform:none}
+  .row .num{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;border:1.5px solid var(--line);font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:3}
+  .row.active .num{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .row .label{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:600;color:var(--ink);background:rgba(241,245,249,.92);padding:2px 7px;border-radius:5px;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis;z-index:2}
+  .row .data{position:absolute;transform:translate(-50%,-50%);font-size:10.5px;color:var(--accent);font-family:ui-monospace,Menlo,Consolas,monospace;background:#eef2ff;border:1px solid #c7d2fe;padding:1px 6px;border-radius:5px;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis;z-index:2}
+  .row svg .arrow{stroke:#94a3b8;stroke-width:1.6;fill:#94a3b8}
+  .row.active svg .arrow{stroke:var(--accent);stroke-width:2.4;fill:var(--accent)}
+  .row.done svg .arrow{stroke:#94a3b8;stroke-width:1.6}
+  .row .concept-flag{position:absolute;font-size:14px;transform:translate(-50%,-50%);z-index:3}
+
+  /* layer focus */
+  .diagram.focus-business .head[data-type=tech],
+  .diagram.focus-business .head[data-type=external],
+  .diagram.focus-business .ll[data-type=tech],
+  .diagram.focus-business .ll[data-type=external]{opacity:.18}
+  .diagram.focus-tech .head[data-type=business],
+  .diagram.focus-tech .ll[data-type=business]{opacity:.18}
+  .row.dimmed{opacity:.12 !important}
+
+  /* Panel */
+  .panel{width:350px;flex-shrink:0;background:var(--card);border-left:1px solid var(--line);overflow-y:auto;padding:20px}
+  .panel .step-tag{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+  .panel .flowline{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px;font-weight:600;flex-wrap:wrap}
+  .panel .chip{padding:3px 9px;border-radius:6px;font-size:12px;border:1.5px solid}
+  .panel .chip[data-type=business]{background:var(--biz-bg);border-color:var(--biz);color:#1e3a8a}
+  .panel .chip[data-type=tech]{background:var(--tech-bg);border-color:var(--tech);color:#115e59}
+  .panel .chip[data-type=external]{background:var(--ext-bg);border-color:var(--ext);color:#92400e}
+  .panel .arrowic{color:var(--muted)}
+  .panel h3{font-size:15px;margin:14px 0 6px}
+  .panel .desc{font-size:13.5px;line-height:1.6;color:#334155}
+  .panel .payload{margin-top:12px;font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f172a;color:#a5b4fc;padding:10px 12px;border-radius:8px;line-height:1.5;word-break:break-word}
+  .panel .payload .k{color:#64748b;display:block;margin-bottom:4px;font-family:system-ui;text-transform:uppercase;letter-spacing:.5px}
+  .concept{margin-top:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fcd34d;border-radius:10px;padding:13px 14px}
+  .concept .t{font-size:12.5px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:6px}
+  .concept .b{font-size:12.5px;line-height:1.55;color:#78350f;margin-top:6px}
+  .panel .idle{color:var(--muted);font-size:13.5px;line-height:1.6}
+
+  /* Business view */
+  .bizview{flex:1;overflow-y:auto;display:none;background:var(--bg)}
+  .bizview.show{display:block}
+  .biz-inner{max-width:1080px;margin:0 auto;padding:30px 34px 60px}
+  .hero{background:linear-gradient(135deg,#1e293b,#4f46e5);color:#fff;border-radius:16px;padding:30px 32px}
+  .hero .logo{font-size:24px;font-weight:800;letter-spacing:.3px}
+  .hero .logo span{color:#c7d2fe}
+  .hero .tag{font-size:15px;color:#e0e7ff;margin-top:6px;font-weight:500}
+  .hero .pitch{font-size:14px;line-height:1.7;color:#e2e8f0;margin-top:14px;max-width:880px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+  .bcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+  .bcard h3{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .bcard ul{margin:0;padding-left:18px}
+  .bcard li{font-size:13px;line-height:1.65;color:#334155;margin-bottom:7px}
+  .bcard p{font-size:13.5px;line-height:1.7;color:#334155;margin:0}
+  .valuegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .vrow{border-left:3px solid var(--accent);padding:4px 0 4px 12px}
+  .vrow .r{font-weight:700;font-size:13px;color:var(--ink)}
+  .vrow .v{font-size:12.5px;color:#475569;line-height:1.55;margin-top:3px}
+  .sectitle{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 0 14px;font-weight:700}
+  .goalgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .gcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+  .gcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.10);border-color:var(--accent)}
+  .gcard .gh{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .gcard .gl{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:700;margin-top:11px}
+  .gcard .gt{font-size:12.8px;line-height:1.55;color:#334155;margin-top:3px}
+  .gcard .pain{color:#9a3412}
+  .kpis{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .kpis span{font-size:11px;background:#f1f5f9;border:1px solid var(--line);border-radius:20px;padding:3px 10px;color:#475569}
+  .gcard .cta{font-size:11.5px;color:var(--accent);font-weight:600;margin-top:13px}
+  @media (max-width:1100px){.panel{width:300px}.side{width:250px}.grid2,.valuegrid,.goalgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">Truckers<span> Corner</span></div></div>
+    <div class="sub" id="m-sub"></div>
+    <div class="sec">Vista</div>
+    <button class="flowbtn navbtn" id="biz-btn">📌 Visión de negocio</button>
+    <div class="sec">Flujos de trabajo</div>
+    <nav id="flowlist"></nav>
+    <div class="sec">Enfoque de capa</div>
+    <div class="filterbtns" id="filters">
+      <button data-f="all" class="on">Todo</button>
+      <button data-f="business">Negocio</button>
+      <button data-f="tech">Técnico</button>
+    </div>
+    <div class="sec">Leyenda</div>
+    <div class="legend">
+      <div class="row"><span class="dot" style="background:var(--biz)"></span>Actor de negocio</div>
+      <div class="row"><span class="dot" style="background:var(--tech)"></span>Componente técnico</div>
+      <div class="row"><span class="dot" style="background:var(--ext)"></span>Sistema externo</div>
+    </div>
+    <div class="gloss">
+      <details><summary>Glosario del dominio</summary><dl id="glossary"></dl></details>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- BUSINESS VIEW -->
+    <section class="bizview" id="bizView"></section>
+
+    <!-- FLOW VIEW -->
+    <div class="flowView" id="flowView">
+      <div class="flowhead"><h2 id="fh-name"></h2><p id="fh-sum"></p><div class="goal" id="fh-goal"></div></div>
+      <div class="controls">
+        <button id="btn-restart">⟲ Reiniciar</button>
+        <button id="btn-prev">◀ Anterior</button>
+        <button id="btn-play" class="primary">▶ Reproducir</button>
+        <button id="btn-next">Siguiente ▶</button>
+        <span class="counter" id="counter">Paso 0 / 0</span>
+        <span class="sp">Velocidad
+          <select id="speed">
+            <option value="2600">Lenta</option>
+            <option value="1800" selected>Normal</option>
+            <option value="1100">Rápida</option>
+          </select>
+        </span>
+      </div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="stage">
+        <div class="diagram-wrap"><div class="diagram" id="diagram"></div></div>
+        <aside class="panel" id="panel"></aside>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="application/json" id="wf-data">
+{
+  "meta": {
+    "title": "Truckers Corner — Explorador de Flujos de Trabajo",
+    "subtitle": "Visión de negocio + diagramas de secuencia animados del dominio Carrier ↔ Broker.",
+    "version": "0.2",
+    "notes": "Fuente canónica. index.html embebe una copia para funcionar offline (doble clic). Si editas aquí, sincroniza la copia embebida en index.html."
+  },
+  "business": {
+    "name": "Truckers Corner",
+    "tagline": "La operación del dispatcher, de papel y teléfono a una sola plataforma.",
+    "pitch": "Truckers Corner digitaliza y automatiza la operación de un carrier/dispatcher que trabaja con múltiples brokers en el transporte de carga de EE.UU. Hoy ese trabajo es manual y disperso: se buscan cargas en DAT, se reciben Rate Confirmations por email en decenas de formatos, se imprimen/firman/escanean, se coordina al driver por teléfono, se rastrea con llamadas y se factura a mano. La plataforma une todo ese ciclo —captación de cargas, lectura de documentos con IA, despacho, tracking en vivo y cobro de comisión— en un solo sistema. El norte es convertirlo en un producto SaaS que cualquier carrier o broker pueda usar.",
+    "problem": [
+      "Las cargas viven en DAT, el email y el teléfono — sin un sistema central.",
+      "Las Rate Confirmations llegan como PDF en 6+ formatos distintos; se firman a mano (imprimir/escanear).",
+      "El compliance de carriers/drivers se trackea con fotos de documentos y memoria.",
+      "El estatus de la carga se sigue por llamadas; el broker no tiene visibilidad.",
+      "La facturación y el cálculo de comisión se hacen manualmente, propensos a error.",
+      "La operación no escala: más cargas = más trabajo manual y más riesgo."
+    ],
+    "model": "La plataforma cobra al carrier una comisión (un % que varía por relación carrier-broker, negociable por carga en excepciones) sobre el rate total de la carga, incluyendo accesoriales como detención o daños. El broker le paga el flete al carrier directamente; la plataforma le cobra su comisión al carrier mediante cargo directo a tarjeta de crédito. La meta de mediano plazo es operar como SaaS multi-tenant: vender el acceso a múltiples carriers y brokers.",
+    "valueByActor": [
+      { "role": "Carrier / Dispatcher", "value": "Deja de operar en silos. Todo en un lugar, menos errores de transcripción, y la capacidad de escalar el volumen sin contratar más personal." },
+      { "role": "Driver", "value": "Instrucciones claras en la app, menos llamadas, captura simple de BOL/POD con la cámara." },
+      { "role": "Broker", "value": "Visibilidad en vivo de su carga, documentación íntegra para el pago, y un carrier siempre en compliance." },
+      { "role": "Dueño de la plataforma (cliente)", "value": "Ingreso por comisión recurrente y, en Fase 2, un activo SaaS vendible a toda la industria." }
+    ]
+  },
+  "actors": [
+    { "id": "dispatcher", "name": "Carrier / Dispatcher", "type": "business", "short": "Usuario operador. Gestiona flota, recibe/acepta cargas, despacha, factura. Es el cliente pagador." },
+    { "id": "driver", "name": "Driver", "type": "business", "short": "Conductor asignado. Ejecuta el transporte; check-in, captura de BOL/POD, comparte ubicación." },
+    { "id": "broker", "name": "Broker", "type": "external", "short": "Dueño de la carga. Publica loads y emite la Rate Confirmation. Inicialmente externo (email / DAT)." },
+    { "id": "dat", "name": "DAT Load Board", "type": "external", "short": "Marketplace externo de cargas. Fuente principal de loads. Acceso vía API oficial." },
+    { "id": "mobile", "name": "App Móvil (React Native)", "type": "tech", "short": "App de driver y dispatcher. Tracking en background, cámara (BOL/POD), push." },
+    { "id": "web", "name": "Portal Web (React)", "type": "tech", "short": "Portal del dispatcher/admin. Onboarding, matching, validación de rate conf, despacho, reportes." },
+    { "id": "api", "name": "API .NET 10", "type": "tech", "short": "Backend principal. Lógica de negocio, módulos (Identity, Carriers, Loads, Orders, Billing), orquestación." },
+    { "id": "jobs", "name": "Jobs (Hangfire)", "type": "tech", "short": "Procesos programados: monitoreo de compliance, alertas de expiración, timers de detención, polling DAT." },
+    { "id": "ocr", "name": "Servicio OCR/IA (Python)", "type": "tech", "short": "Servicio separado. Extrae datos estructurados de Rate Confirmations en múltiples formatos de broker." },
+    { "id": "signalr", "name": "SignalR (Realtime)", "type": "tech", "short": "Canal en tiempo real. Difunde ubicación del driver al portal del dispatcher y al broker." },
+    { "id": "db", "name": "PostgreSQL", "type": "tech", "short": "Base de datos. Todas las entidades nacen con TenantId (scaffolding SaaS para Fase 2)." },
+    { "id": "stripe", "name": "Stripe", "type": "external", "short": "Procesador de pagos. Cargo directo a la tarjeta del carrier por la comisión de la plataforma." },
+    { "id": "fmcsa", "name": "FMCSA SAFER", "type": "external", "short": "API gubernamental gratuita. Verifica autoridad MC#/USDOT y estado del carrier." },
+    { "id": "push", "name": "FCM / APNs", "type": "external", "short": "Notificaciones push a Android (FCM) e iOS (APNs)." },
+    { "id": "email", "name": "Email (SendGrid)", "type": "external", "short": "Correo transaccional: OTP, alertas de compliance, recepción de rate confs, envío de invoices." }
+  ],
+  "flows": [
+    {
+      "id": "onboarding",
+      "name": "1 · Onboarding & Compliance",
+      "icon": "📋",
+      "summary": "Registro de los 4 actores (Broker, Carrier, Driver, Equipment) con sus documentos, verificación contra FMCSA, y un motor de compliance que vigila expiraciones y bloquea operaciones cuando algo vence.",
+      "goal": "Incorporar carriers, drivers y equipo de modo que SOLO operen entidades en regla — protegiendo al broker y evitando multas y rechazos en carretera.",
+      "value": "Confianza y reducción de riesgo legal: la plataforma garantiza que quien acepta una carga tiene autoridad, seguros y licencias vigentes.",
+      "pain": "Hoy el cliente trackea expiraciones con fotos de documentos y memoria; existe el riesgo real de despachar con un seguro o CDL vencido.",
+      "kpis": ["% de entidades en compliance", "Días de anticipación de las alertas", "Tiempo de onboarding de un carrier nuevo"],
+      "participants": ["dispatcher", "web", "api", "fmcsa", "db", "jobs", "email"],
+      "steps": [
+        { "from": "dispatcher", "to": "web", "action": "Inicia registro de Carrier", "data": "{ name, MC#, USDOT, contactos }", "desc": "El dispatcher captura los datos básicos del carrier. En el modelo correcto, Carrier es entidad propia con multi-cardinalidad: 1 Carrier → N Drivers / N Trucks / N Trailers.", "concept": { "title": "Multi-cardinalidad (corrige el código heredado)", "body": "El código heredado amarraba todo 1:1 a un único User (driver=carrier=truck). El modelo real exige que un Carrier tenga múltiples drivers, camiones y trailers, cada uno con su propio compliance." } },
+        { "from": "web", "to": "api", "action": "POST /carriers", "data": "{ carrier, tenantId }", "desc": "El portal envía el alta al backend. Aunque en v1 solo exista un tenant, cada entidad nace con TenantId.", "concept": { "title": "Scaffolding multi-tenant", "body": "Poner TenantId en todas las tablas desde el día 1 (aunque siempre sea el mismo valor) cuesta poco (~+40-80h) y hace que la transición a SaaS en Fase 2 sea agregar features, no cirugía." } },
+        { "from": "api", "to": "fmcsa", "action": "Verifica autoridad", "data": "{ MC#, USDOT }", "desc": "El backend consulta FMCSA SAFER para validar que la autoridad del carrier esté activa.", "concept": { "title": "FMCSA es gratis", "body": "La API QCMobile del gobierno de EE.UU. es gratuita. Verificar autoridad e insurance on file no agrega costo de servicios externos." } },
+        { "from": "fmcsa", "to": "api", "action": "Estado de autoridad", "data": "{ active, insuranceOnFile, safetyRating }", "desc": "FMCSA devuelve el estado. Si la autoridad no está activa, el carrier no puede operar." },
+        { "from": "api", "to": "db", "action": "Persiste Carrier", "data": "{ carrier, complianceState: Pending }", "desc": "Se guarda el carrier con estado de compliance inicial." },
+        { "from": "dispatcher", "to": "web", "action": "Sube documentos", "data": "Insurance, Cargo/General Liability, W9, CDL, registrations + fechas de expiración", "desc": "Cada actor tiene su set de documentos: Broker (MC, USDOT, Bond, W9), Carrier (MC, USDOT, Insurance, Liability), Driver (CDL, endorsements hazmat/tanker), Equipment (VIN, registration)." },
+        { "from": "web", "to": "api", "action": "POST /compliance-documents", "data": "{ ownerType, ownerId, type, file, expirationDate }", "desc": "Documento polimórfico: pertenece a Broker/Carrier/Driver/Truck/Trailer. Incluye fecha de expiración para el monitoreo." },
+        { "from": "api", "to": "db", "action": "Guarda docs + calcula estado", "data": "{ documents[], complianceState: Valid|Blocked }", "desc": "El backend evalúa si todos los documentos requeridos están presentes y vigentes. Activa o bloquea el perfil." },
+        { "from": "jobs", "to": "db", "action": "[Diario] Evalúa expiraciones", "data": "scan(complianceDocuments)", "desc": "Un job recurrente revisa todos los documentos contra la fecha actual.", "concept": { "title": "Compliance como gate transversal", "body": "No es un módulo aislado: atraviesa todo. Si un documento vence, la entidad pasa a Blocked y eso cascadea — no se puede asignar a un dispatch, no se puede despachar. Protege al broker de trabajar con un carrier fuera de regla." } },
+        { "from": "jobs", "to": "email", "action": "[10 días antes] Alerta de expiración", "data": "{ to: carrier, docType, expiresIn: 10d }", "desc": "El sistema avisa con antelación (la regla del cliente: 10 días antes) para que el carrier renueve sin interrumpir operaciones." },
+        { "from": "jobs", "to": "db", "action": "[Si expiró] Bloquea entidad", "data": "{ complianceState: Blocked }", "desc": "Si un documento requerido expira, la entidad queda bloqueada para negocios hasta regularizar. El cliente lo hace hoy a mano con fotos; el sistema lo automatiza." }
+      ]
+    },
+    {
+      "id": "posting",
+      "name": "2 · Posting (Disponibilidad)",
+      "icon": "🚚",
+      "summary": "El carrier publica la disponibilidad de un camión: fecha, ubicación, lanes preferidas, tipo de equipo y rate mínimo por milla. Es la dirección correcta del flujo — el carrier ofrece capacidad, no el shipper publica carga.",
+      "goal": "Convertir capacidad ociosa (un camión disponible) en oportunidad de negocio, publicándola con criterios claros para alimentar el matching.",
+      "value": "Mejor utilización de la flota y menos deadhead (millas vacías): cada camión disponible se vuelve buscable.",
+      "pain": "Hoy la disponibilidad vive en la cabeza del dispatcher y se gestiona ad-hoc, sin criterios sistematizados.",
+      "kpis": ["Utilización del camión (%)", "Deadhead (% millas vacías)", "Tiempo hasta la primera oferta relevante"],
+      "participants": ["dispatcher", "web", "api", "db"],
+      "steps": [
+        { "from": "dispatcher", "to": "web", "action": "Captura disponibilidad", "data": "{ truckId, date, location, lanes[], equipmentType, minRatePerMile }", "desc": "El dispatcher indica qué camión está disponible, desde dónde, hacia qué lanes (cities/states), con qué equipo (dry van, reefer, flatbed) y el rate mínimo aceptable." },
+        { "from": "web", "to": "api", "action": "POST /availability", "data": "{ availability, tenantId }", "desc": "Se envía al backend la oferta de capacidad." },
+        { "from": "api", "to": "db", "action": "Verifica compliance del equipo", "data": "check(truck, driver).complianceState", "desc": "Antes de publicar, el backend valida que el camión y su driver no estén Blocked.", "concept": { "title": "El compliance se chequea aquí", "body": "Un camión con registration vencida o un driver con CDL vencida no puede publicarse. El gate de compliance del Flujo 1 se aplica en cada punto operacional." } },
+        { "from": "api", "to": "api", "action": "Valida business rules", "data": "rate >= threshold, location válida", "desc": "Reglas de negocio: umbrales de rate, formato de ubicación, lanes válidas.", "self": true },
+        { "from": "api", "to": "db", "action": "Publica disponibilidad", "data": "{ availability, status: Published }", "desc": "La disponibilidad queda publicada y lista para alimentar el motor de matching." }
+      ]
+    },
+    {
+      "id": "matching",
+      "name": "3 · Matching (DAT)",
+      "icon": "🔎",
+      "summary": "El sistema busca cargas en DAT Load Board (vía API oficial) que coincidan con la disponibilidad publicada, las normaliza, filtra y rankea, y le presenta al dispatcher las mejores opciones para que elija.",
+      "goal": "Encontrar automáticamente las mejores cargas para la capacidad disponible, ordenadas por rentabilidad y ajuste.",
+      "value": "Más cargas rentables capturadas y menos tiempo del dispatcher buscando manualmente en DAT.",
+      "pain": "Hoy la búsqueda en DAT es manual y repetitiva; las buenas cargas se pierden por falta de tiempo o de criterio sistemático.",
+      "kpis": ["Rate por milla promedio", "Ofertas relevantes por disponibilidad", "Tiempo de búsqueda por carga"],
+      "participants": ["dat", "jobs", "api", "db", "web", "dispatcher"],
+      "steps": [
+        { "from": "jobs", "to": "dat", "action": "Busca cargas (API oficial)", "data": "GET loads?lanes,equipment,date", "desc": "El sistema consulta DAT vía su API REST oficial para traer loads que matchean lanes/equipo/fecha.", "concept": { "title": "DAT vía API, NO scraping", "body": "Scrapear DAT estando logueado viola sus Términos (breach of contract — caso Meta v. Bright Data) y la regla de no compartir login. Además, en un SaaS multi-tenant no puedes compartir un login entre tenants: un scraper sería código desechable. La API se construye una vez y carga hacia la Fase 2." } },
+        { "from": "dat", "to": "api", "action": "Lista de loads", "data": "[{ origin, destination, rate, miles, broker, equipment }]", "desc": "DAT devuelve cargas candidatas con sus datos principales." },
+        { "from": "api", "to": "api", "action": "Normaliza + filtra + rankea", "data": "rank(by: price, distance, constraints)", "desc": "El backend normaliza formatos, descarta no-matches y ordena por precio, distancia y restricciones (equipo, hazmat, etc.).", "self": true, "concept": { "title": "Dos fuentes de loads", "body": "En v1 la fuente principal es DAT. En Fase 2, los brokers de la plataforma también publican loads directamente; el matching mezcla ambas fuentes en un solo pool rankeado." } },
+        { "from": "api", "to": "db", "action": "Cachea ofertas rankeadas", "data": "{ offers[], rankedAt }", "desc": "Se guardan las ofertas procesadas para consulta rápida del dispatcher." },
+        { "from": "web", "to": "api", "action": "GET /offers", "data": "{ availabilityId }", "desc": "El dispatcher abre la vista de ofertas para su disponibilidad." },
+        { "from": "api", "to": "web", "action": "Top N ofertas", "data": "[{ load, score, rate, miles }]", "desc": "El backend devuelve las mejores opciones rankeadas." },
+        { "from": "dispatcher", "to": "web", "action": "Selecciona oferta (o rechaza)", "data": "{ selectedOfferId }", "desc": "El dispatcher revisa y elige una oferta. Si rechaza todas, el ciclo vuelve a recolectar más ofertas. (Sin contraoferta al broker — confirmado por el cliente.)" }
+      ]
+    },
+    {
+      "id": "booking",
+      "name": "4 · Booking & Rate Confirmation (OCR)",
+      "icon": "📄",
+      "summary": "El corazón del producto. El broker envía la Rate Confirmation como PDF; el servicio de OCR/IA extrae los datos estructurados de cualquier formato; el dispatcher valida/corrige y firma. De aquí nace el contrato.",
+      "goal": "Cerrar el contrato con el broker capturando todos sus términos SIN transcripción manual, sin importar el formato del PDF.",
+      "value": "Cero re-tecleo, datos confiables y un contrato trazable. Es el mayor ahorro de tiempo y la principal fuente de errores eliminada.",
+      "pain": "Hoy se leen, imprimen, firman a mano y escanean PDFs de 6+ formatos distintos; transcribir esos datos manualmente es lento y propenso a error.",
+      "kpis": ["Tiempo de procesamiento por rate conf", "Tasa de error en datos capturados", "% de campos auto-extraídos correctamente"],
+      "participants": ["dispatcher", "broker", "email", "api", "ocr", "db", "web"],
+      "steps": [
+        { "from": "dispatcher", "to": "broker", "action": "Acepta la carga", "data": "{ loadId, carrierInfo }", "desc": "El dispatcher comunica al broker que toma la carga (vía teléfono/email, como hoy)." },
+        { "from": "broker", "to": "email", "action": "Envía Rate Confirmation (PDF)", "data": "📎 RateConf.pdf", "desc": "El broker emite la Rate Confirmation y la manda por correo. Hoy el cliente la imprime, firma a mano y reenvía.", "concept": { "title": "6+ formatos reales, mismos campos", "body": "D&L, Impala, Redline, Mast, TA Services, Allen Lund, Worldwide Express — cada broker tiene un layout totalmente distinto, pero todos llevan los mismos campos núcleo. Por eso se necesita OCR/IA, no un parser rígido." } },
+        { "from": "email", "to": "api", "action": "Ingesta del PDF", "data": "POST /rate-confirmations (file)", "desc": "El PDF entra a la plataforma (captura desde email o upload manual del dispatcher)." },
+        { "from": "api", "to": "ocr", "action": "Solicita extracción", "data": "{ file }", "desc": "El backend envía el documento al servicio Python de OCR/IA." },
+        { "from": "ocr", "to": "ocr", "action": "Parsea con modelo de visión", "data": "extract(pickups[], stops[], rate, accessorials, miles, broker, commodity, weight, instructions, detentionTerms)", "desc": "El servicio extrae todos los campos estructurados, incluyendo cargas multi-stop (varios pickups y deliveries).", "self": true, "concept": { "title": "Multi-stop es la norma", "body": "Una rate conf puede tener 3 pickups y 2 deliveries (caso Impala) o 5 stops (caso Mast). El modelo de datos debe soportar N pickups y N stops por carga." } },
+        { "from": "ocr", "to": "api", "action": "Datos + confidence", "data": "{ extractedData, confidenceScore }", "desc": "Devuelve los datos extraídos y un puntaje de confianza por campo." },
+        { "from": "api", "to": "db", "action": "Guarda RateConfirmation", "data": "{ parsedData, originalPdf, status: NeedsReview }", "desc": "Se almacena el documento parseado junto con el PDF original." },
+        { "from": "api", "to": "web", "action": "Muestra datos para validar", "data": "{ extractedData, confidenceScore }", "desc": "El portal presenta los datos extraídos resaltando los de baja confianza." },
+        { "from": "dispatcher", "to": "web", "action": "Valida / corrige", "data": "{ correctedFields }", "desc": "El dispatcher revisa y corrige errores del OCR.", "concept": { "title": "Validación-corrección humana", "body": "El cliente lo aprobó como salida rápida y barata: el rate conf es un contrato, así que un humano confirma antes de firmar. No se busca extracción 100% automática en v1." } },
+        { "from": "web", "to": "api", "action": "Confirma y firma", "data": "{ rateConfId, signature }", "desc": "El dispatcher firma. En v1 se registra la firma del flujo manual actual; la firma electrónica integrada (DocuSign) es Fase 2." },
+        { "from": "api", "to": "db", "action": "RateConfirmation = Signed", "data": "{ status: Signed, signedAt }", "desc": "El contrato queda firmado y listo para generar la orden interna." }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "name": "5 · Order & Dispatch",
+      "icon": "📦",
+      "summary": "De la Rate Confirmation firmada nace el Internal Order (entidad operacional de la plataforma). El dispatcher asigna driver + camión + trailer, se genera el Dispatch y el driver lo confirma desde la app.",
+      "goal": "Convertir un contrato firmado en una orden ejecutable con recursos asignados y el driver enterado y comprometido.",
+      "value": "Despacho sin ambigüedad: nada se pierde entre 'acepté la carga' y 'el driver va en camino'.",
+      "pain": "Hoy la coordinación es telefónica y las instrucciones están dispersas; es fácil que un driver salga sin toda la información.",
+      "kpis": ["Tiempo de contrato → despacho", "% de dispatches con acknowledgment del driver", "Asignaciones sin conflicto de equipo"],
+      "participants": ["api", "db", "dispatcher", "web", "push", "mobile", "driver"],
+      "steps": [
+        { "from": "api", "to": "db", "action": "Crea Internal Order", "data": "{ order: { fromRateConf, carrierId(FK), rate, commission } }", "desc": "El backend deriva la orden de la rate conf firmada.", "concept": { "title": "Tres entidades distintas", "body": "RateConfirmation (el contrato) → Order (la entidad operacional, con FK explícita a Carrier) → Dispatch (la instrucción concreta al driver). No deben fusionarse; el código heredado las mezclaba." } },
+        { "from": "dispatcher", "to": "web", "action": "Asigna recursos", "data": "{ orderId, driverId, truckId, trailerId }", "desc": "El dispatcher elige qué driver, camión y trailer ejecutan la orden.", "concept": { "title": "Truck y Trailer SÍ se asignan al Dispatch", "body": "El modelo conceptual del cliente no lo mostraba, pero es indispensable: sin saber qué equipo va en cada dispatch no se puede generar el BOL ni reportar utilización." } },
+        { "from": "web", "to": "api", "action": "POST /dispatch", "data": "{ orderId, driverId, truckId, trailerId }", "desc": "Se envía la asignación al backend." },
+        { "from": "api", "to": "db", "action": "Verifica compliance + crea Dispatch", "data": "check(driver,truck,trailer); { dispatch, instructions }", "desc": "Se re-valida que driver/camión/trailer no estén Blocked, y se generan las instrucciones de despacho." },
+        { "from": "api", "to": "push", "action": "Notifica al driver", "data": "{ deviceToken, dispatchId }", "desc": "Se dispara la notificación push (FCM para Android, APNs para iOS)." },
+        { "from": "push", "to": "mobile", "action": "Push: nuevo dispatch", "data": "{ dispatchId }", "desc": "El dispositivo del driver recibe la notificación." },
+        { "from": "mobile", "to": "driver", "action": "Muestra dispatch + instrucciones", "data": "{ pickup, delivery, instructions }", "desc": "El driver ve la carga asignada y las instrucciones." },
+        { "from": "driver", "to": "mobile", "action": "Acknowledge", "data": "{ accepted: true }", "desc": "El driver confirma recepción.", "concept": { "title": "Acknowledgment obligatorio", "body": "La orden no se activa hasta que el driver confirma que recibió el dispatch. Evita cargas asignadas que el driver nunca vio." } },
+        { "from": "mobile", "to": "api", "action": "POST /dispatch/{id}/ack", "data": "{ acknowledgedAt }", "desc": "Se registra la confirmación." },
+        { "from": "api", "to": "db", "action": "Order activo", "data": "{ dispatchStatus: Acknowledged }", "desc": "La orden queda activa y entra a la fase de ejecución." }
+      ]
+    },
+    {
+      "id": "execution",
+      "name": "6 · Ejecución (Pickup → Transit → Delivery)",
+      "icon": "🛰️",
+      "summary": "El driver ejecuta la carga: check-in y captura de BOL en pickup, tracking de ubicación en tiempo real durante el transit, y check-in con captura de POD firmado en delivery. Se detectan detenciones y se registran daños.",
+      "goal": "Ejecutar la carga con visibilidad en vivo y documentación completa, para garantizar el pago y detectar cargos cobrables (detención).",
+      "value": "Visibilidad al broker, evidencia íntegra (BOL/POD) que asegura el cobro, y detección automática de detención que de otro modo se pierde.",
+      "pain": "Hoy el rastreo es por llamadas, el papeleo se traspapela, y la detención cobrable muchas veces no se documenta a tiempo.",
+      "kpis": ["% de entregas a tiempo", "% de cargas con POD completo", "Detención capturada ($) vs. perdida"],
+      "participants": ["jobs", "push", "driver", "mobile", "api", "signalr", "web", "db", "broker"],
+      "steps": [
+        { "from": "jobs", "to": "push", "action": "[24h y 3h antes] Confirmaciones", "data": "{ dispatchId, reminder }", "desc": "Jobs programados envían recordatorios pre-pickup, como exige la operación.", "concept": { "title": "Confirmaciones temporales", "body": "El proceso real exige avisos 24h y 3h antes del pickup, y 24h antes del delivery. Son scheduled jobs (Hangfire), no acciones manuales." } },
+        { "from": "driver", "to": "mobile", "action": "Check-in en pickup", "data": "{ location, timestamp }", "desc": "El driver llega al origen y hace check-in desde la app." },
+        { "from": "mobile", "to": "api", "action": "POST /dispatch/{id}/checkin", "data": "{ location, ts, phase: Pickup }", "desc": "Se registra la llegada e inicia el timer de carga." },
+        { "from": "driver", "to": "mobile", "action": "Captura BOL", "data": "📷 BOL.jpg", "desc": "El driver fotografía/escanea el Bill of Lading al cargar.", "concept": { "title": "BOL vs POD", "body": "El BOL se captura al CARGAR (pickup). El POD firmado se captura al ENTREGAR (delivery). Son documentos distintos en momentos distintos." } },
+        { "from": "api", "to": "broker", "action": "[Si >2h] Notifica detención", "data": "{ detentionStart, rate: $40/h }", "desc": "Si la carga supera 2h, se detecta detención y se notifica al broker (posible cargo adicional).", "concept": { "title": "Detención >2h", "body": "Regla de negocio recurrente en las rate confs reales: la detención empieza a acumular 2h después del appointment, típicamente $40/h con tope (~$200/stop). Debe notificarse al broker dentro de plazo." } },
+        { "from": "mobile", "to": "api", "action": "Inicia tracking (background)", "data": "stream{ lat, lng, ts } cada ~30s", "desc": "Durante el transit, la app envía la ubicación periódicamente, incluso en background.", "concept": { "title": "Tracking confiable", "body": "Las rate confs penalizan apagar el tracking (ej. -$250 / -$100). React Native con ubicación en background cubre este requisito; es la razón por la que la app móvil es crítica." } },
+        { "from": "api", "to": "signalr", "action": "Difunde ubicación", "data": "{ dispatchId, position }", "desc": "El backend retransmite la posición en tiempo real." },
+        { "from": "signalr", "to": "web", "action": "Posición en vivo", "data": "{ position }", "desc": "El dispatcher (y, vía visibilidad, el broker) ve el camión moverse en el mapa." },
+        { "from": "driver", "to": "mobile", "action": "Check-in en delivery", "data": "{ location, ts, phase: Delivery }", "desc": "El driver llega al destino y hace check-in." },
+        { "from": "driver", "to": "mobile", "action": "Captura POD firmado + daños", "data": "📷 POD.jpg, { damages?, shortages? }", "desc": "El driver captura el Proof of Delivery firmado y registra daños o faltantes si los hay." },
+        { "from": "mobile", "to": "api", "action": "Sube POD + incidentes", "data": "{ pod, incidentReport? }", "desc": "Se suben los documentos y, si aplica, un reporte de incidente." },
+        { "from": "api", "to": "db", "action": "Dispatch = Delivered", "data": "{ status: Delivered, pod, bol }", "desc": "La entrega queda registrada con sus documentos; listo para facturar." }
+      ]
+    },
+    {
+      "id": "billing",
+      "name": "7 · Billing & Comisión",
+      "icon": "💵",
+      "summary": "Se genera el invoice con Rate Confirmation y POD adjuntos, se envía al broker, y la plataforma cobra su comisión (% por carrier-broker, sobre el total + accesoriales) a la tarjeta del carrier vía Stripe.",
+      "goal": "Cerrar el ciclo financiero: facturar al broker con la documentación requerida y cobrar la comisión de la plataforma al carrier, automáticamente.",
+      "value": "Ingreso recurrente para la plataforma sin fricción de cobro, y un cierre de operación limpio y auditable.",
+      "pain": "Hoy la facturación y el cálculo de comisión se hacen a mano; el cobro depende de seguimiento manual.",
+      "kpis": ["Días desde entrega hasta cobro", "Comisión cobrada vs. devengada", "Rentabilidad por carrier"],
+      "participants": ["api", "db", "broker", "email", "stripe", "dispatcher", "web"],
+      "steps": [
+        { "from": "api", "to": "db", "action": "Genera Invoice", "data": "{ invoice, attach: [rateConf, pod] }", "desc": "Al completarse la entrega, se genera el invoice con la rate conf y el POD adjuntos (requisito de pago de todos los brokers)." },
+        { "from": "api", "to": "email", "action": "Envía invoice al broker", "data": "{ to: broker.ap, invoice, pod, rateConf }", "desc": "El invoice se manda al área de cuentas por pagar del broker." },
+        { "from": "broker", "to": "api", "action": "Confirma recepción", "data": "{ received: true }", "desc": "Se registra la confirmación (o se marca manual). El broker pagará el flete al carrier directamente.", "concept": { "title": "Dos flujos financieros distintos", "body": "(1) Broker → Carrier: paga el flete, FUERA de la plataforma (se registra). (2) Carrier → Plataforma: paga la comisión, DENTRO de la plataforma vía Stripe. No se mezclan." } },
+        { "from": "api", "to": "api", "action": "Calcula comisión", "data": "commission = %(carrier,broker) × (total + accesoriales)", "desc": "El % varía por relación carrier-broker (negociable por load en excepciones) y se aplica sobre el rate total incluyendo accesoriales como detención o daños.", "self": true, "concept": { "title": "Comisión variable", "body": "No es un % fijo global: se configura por par carrier-broker. Y la base incluye los cargos que surgieron en el proceso (espera, daños), no solo el line haul." } },
+        { "from": "api", "to": "stripe", "action": "Cobra a tarjeta del carrier", "data": "{ customerId, amount: commission }", "desc": "Cargo directo a la tarjeta de crédito del carrier (no batch, no factoring en v1).", "concept": { "title": "Cargo directo, no factoring", "body": "El cliente confirmó: cargo directo a tarjeta. Factoring/quick-pay queda para una fase futura si el negocio crece." } },
+        { "from": "stripe", "to": "api", "action": "Confirmación de cargo", "data": "{ chargeId, status: succeeded }", "desc": "Stripe confirma el cobro (2.9% + $0.30 por transacción)." },
+        { "from": "api", "to": "db", "action": "Order = Closed", "data": "{ commissionCharge, status: Closed }", "desc": "Se registra el cargo de comisión y se cierra la orden." },
+        { "from": "api", "to": "web", "action": "Reportes (Master Web)", "data": "{ commissions, carrierProfitability, history }", "desc": "El dashboard maestro muestra comisiones, rentabilidad por carrier, órdenes en tránsito, confirmaciones pendientes e históricos." }
+      ]
+    }
+  ],
+  "glossary": [
+    { "term": "MC# / USDOT", "def": "Números de autoridad federal de transporte (Motor Carrier / US DOT). Identifican y habilitan legalmente a carriers y brokers ante la FMCSA." },
+    { "term": "Broker", "def": "Intermediario que conecta al dueño de la carga (shipper) con el carrier. Emite la Rate Confirmation y paga el flete al carrier." },
+    { "term": "Carrier", "def": "Empresa transportista dueña/operadora de camiones. Aquí es el usuario pagador de la plataforma." },
+    { "term": "Rate Confirmation", "def": "Documento contractual que el broker emite al carrier con los términos de la carga: rate, origen/destino, equipo, accesoriales. Es el contrato de la operación." },
+    { "term": "BOL (Bill of Lading)", "def": "Documento que acompaña la carga, capturado al cargar (pickup). Detalla mercancía, origen y destino." },
+    { "term": "POD (Proof of Delivery)", "def": "Comprobante de entrega firmado por el receptor, capturado al entregar (delivery). Requisito para cobrar." },
+    { "term": "Accesoriales", "def": "Cargos adicionales al line haul: detención (espera), layover, lumper fees, TONU, etc." },
+    { "term": "Detención (Detention)", "def": "Tiempo de espera del camión en pickup/delivery más allá de un umbral (típico 2h). Genera cargo (~$40/h con tope)." },
+    { "term": "Lane", "def": "Ruta o corredor origen→destino que un carrier prefiere operar (ej. CA→TX)." },
+    { "term": "Reefer / Dry Van / Flatbed", "def": "Tipos de equipo: refrigerado / caja seca / plataforma. Cada uno con su compliance y características." },
+    { "term": "DAT Load Board", "def": "El mayor marketplace de cargas de EE.UU. Fuente principal de loads; acceso vía API oficial." },
+    { "term": "TONU (Truck Order Not Used)", "def": "Cargo cuando se ordena un camión y luego se cancela la carga (~$200)." },
+    { "term": "FMCSA SAFER", "def": "Sistema federal para verificar autoridad, seguros y safety rating de carriers/brokers. API gratuita." },
+    { "term": "Multi-tenant / SaaS", "def": "Arquitectura donde múltiples clientes (tenants) usan la misma plataforma con datos aislados. Diferida a Fase 2 con scaffolding desde v1." }
+  ]
+}
+
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('wf-data').textContent);
+  var actorsById = {}; DATA.actors.forEach(function(a){actorsById[a.id]=a;});
+
+  var COL_W=200, HEAD_H=96, STEP_H=98, PAD_BOTTOM=30;
+  var state={flow:null, step:0, playing:false, timer:null, filter:'all', view:'business'};
+
+  document.getElementById('m-sub').textContent = DATA.meta.subtitle;
+  var gl=document.getElementById('glossary');
+  DATA.glossary.forEach(function(g){
+    var dt=document.createElement('dt'); dt.textContent=g.term; gl.appendChild(dt);
+    var dd=document.createElement('dd'); dd.textContent=g.def; gl.appendChild(dd);
+  });
+
+  // ---- Flow list ----
+  var list=document.getElementById('flowlist');
+  DATA.flows.forEach(function(f,i){
+    var b=document.createElement('button');
+    b.className='flowbtn'; b.dataset.idx=i;
+    b.innerHTML='<span class="ic">'+(f.icon||'•')+'</span>'+esc(f.name);
+    b.addEventListener('click',function(){selectFlow(i);});
+    list.appendChild(b);
+  });
+
+  document.getElementById('biz-btn').addEventListener('click',showBusiness);
+
+  // ---- Filters ----
+  document.getElementById('filters').addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b)return;
+    state.filter=b.dataset.f;
+    [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});
+    if(state.view==='flow') applyFilter();
+  });
+
+  // ---- Controls ----
+  document.getElementById('btn-play').addEventListener('click',togglePlay);
+  document.getElementById('btn-next').addEventListener('click',function(){pause();stepTo(state.step+1);});
+  document.getElementById('btn-prev').addEventListener('click',function(){pause();stepTo(state.step-1);});
+  document.getElementById('btn-restart').addEventListener('click',function(){pause();stepTo(0);});
+
+  // ---- Business view ----
+  function showBusiness(){
+    pause();
+    state.view='business';
+    document.getElementById('bizView').classList.add('show');
+    document.getElementById('flowView').classList.add('hide');
+    document.getElementById('biz-btn').classList.add('active');
+    [].forEach.call(list.children,function(b){b.classList.remove('active');});
+    renderBusiness();
+  }
+
+  function renderBusiness(){
+    var bz=DATA.business, el=document.getElementById('bizView');
+    var h='<div class="biz-inner">';
+    h+='<div class="hero"><div class="logo">Truckers<span> Corner</span></div>'
+      +'<div class="tag">'+esc(bz.tagline)+'</div>'
+      +'<div class="pitch">'+esc(bz.pitch)+'</div></div>';
+
+    h+='<div class="grid2">';
+    h+='<div class="bcard"><h3>⚠️ El problema hoy</h3><ul>';
+    bz.problem.forEach(function(p){h+='<li>'+esc(p)+'</li>';});
+    h+='</ul></div>';
+    h+='<div class="bcard"><h3>💰 Modelo de negocio</h3><p>'+esc(bz.model)+'</p></div>';
+    h+='</div>';
+
+    h+='<div class="bcard" style="margin-top:18px"><h3>🎯 Valor por actor</h3><div class="valuegrid">';
+    bz.valueByActor.forEach(function(v){
+      h+='<div class="vrow"><div class="r">'+esc(v.role)+'</div><div class="v">'+esc(v.value)+'</div></div>';
+    });
+    h+='</div></div>';
+
+    h+='<div class="sectitle">Meta de cada flujo de trabajo</div><div class="goalgrid">';
+    DATA.flows.forEach(function(f,i){
+      h+='<div class="gcard" data-idx="'+i+'">'
+        +'<div class="gh">'+(f.icon||'•')+' '+esc(f.name)+'</div>'
+        +'<div class="gl">Objetivo</div><div class="gt">'+esc(f.goal||'')+'</div>'
+        +'<div class="gl">Valor que entrega</div><div class="gt">'+esc(f.value||'')+'</div>'
+        +'<div class="gl">Dolor que elimina</div><div class="gt pain">'+esc(f.pain||'')+'</div>'
+        +'<div class="gl">KPIs</div><div class="kpis">'+(f.kpis||[]).map(function(k){return '<span>'+esc(k)+'</span>';}).join('')+'</div>'
+        +'<div class="cta">Ver el flujo paso a paso →</div>'
+        +'</div>';
+    });
+    h+='</div></div>';
+    el.innerHTML=h;
+    [].forEach.call(el.querySelectorAll('.gcard'),function(c){
+      c.addEventListener('click',function(){selectFlow(parseInt(c.dataset.idx,10));});
+    });
+  }
+
+  function selectFlow(i){
+    state.flow=DATA.flows[i]; state.step=0; pause();
+    state.view='flow';
+    document.getElementById('bizView').classList.remove('show');
+    document.getElementById('flowView').classList.remove('hide');
+    document.getElementById('biz-btn').classList.remove('active');
+    [].forEach.call(list.children,function(b,j){b.classList.toggle('active',j===i);});
+    document.getElementById('fh-name').textContent=state.flow.name;
+    document.getElementById('fh-sum').textContent=state.flow.summary;
+    document.getElementById('fh-goal').innerHTML='🎯 <b>Meta de negocio:</b> '+esc(state.flow.goal||'');
+    buildDiagram();
+    render();
+  }
+
+  function colIndex(flow,id){return flow.participants.indexOf(id);}
+  function colX(idx){return idx*COL_W + COL_W/2;}
+
+  function buildDiagram(){
+    var f=state.flow, dg=document.getElementById('diagram');
+    var W=f.participants.length*COL_W;
+    var H=HEAD_H + f.steps.length*STEP_H + PAD_BOTTOM;
+    dg.style.width=W+'px'; dg.style.height=H+'px';
+    dg.className='diagram';
+    var html='';
+    html+='<svg class="lifelines" width="'+W+'" height="'+H+'">';
+    f.participants.forEach(function(id,i){
+      var a=actorsById[id], x=colX(i), color=a.type==='business'?'#93c5fd':a.type==='tech'?'#5eead4':'#fcd34d';
+      html+='<line class="ll" data-type="'+a.type+'" x1="'+x+'" y1="'+(HEAD_H-8)+'" x2="'+x+'" y2="'+(H-10)+'" stroke="'+color+'" stroke-width="1.5" stroke-dasharray="4 5"/>';
+    });
+    html+='</svg>';
+    f.participants.forEach(function(id,i){
+      var a=actorsById[id], x=colX(i);
+      var role=a.type==='business'?'Negocio':a.type==='tech'?'Técnico':'Externo';
+      html+='<div class="head" data-type="'+a.type+'" style="left:'+x+'px" title="'+esc(a.short)+'">'
+          +'<div class="box">'+esc(a.name)+'</div><div class="role">'+role+'</div></div>';
+    });
+    f.steps.forEach(function(s,i){
+      var top=HEAD_H + i*STEP_H;
+      var si=colIndex(f,s.from), ti=colIndex(f,s.to);
+      var x1=colX(si), x2=colX(ti);
+      var yc=STEP_H*0.60;
+      var fromType=actorsById[s.from].type, toType=actorsById[s.to].type;
+      html+='<div class="row" data-i="'+i+'" data-ft="'+fromType+'" data-tt="'+toType+'" style="top:'+top+'px;width:'+(f.participants.length*COL_W)+'px;height:'+STEP_H+'px">';
+      html+='<svg width="'+(f.participants.length*COL_W)+'" height="'+STEP_H+'">'+arrowSVG(x1,x2,yc,s.self)+'</svg>';
+      html+='<div class="num" style="left:'+x1+'px;top:'+yc+'px">'+(i+1)+'</div>';
+      var midX = s.self ? (x1+62) : (x1+x2)/2;
+      html+='<div class="label" style="left:'+midX+'px;top:'+(yc-20)+'px">'+esc(s.action)+'</div>';
+      html+='<div class="data" style="left:'+midX+'px;top:'+(yc+18)+'px" title="'+esc(s.data)+'">'+esc(s.data)+'</div>';
+      if(s.concept){ html+='<div class="concept-flag" style="left:'+(midX + (s.self?90:0))+'px;top:'+(yc-20)+'px" title="Concepto clave">💡</div>'; }
+      html+='</div>';
+    });
+    dg.innerHTML=html;
+    applyFilter();
+  }
+
+  function arrowSVG(x1,x2,y,self){
+    if(self){
+      var ex=x1+6, ey=y+16;
+      var path='M '+x1+' '+(y-8)+' h 52 v 24 h -46';
+      var head='M '+ex+' '+ey+' l 9 -5 l 0 10 z';
+      return '<path class="arrow" d="'+path+'" fill="none"/><path class="arrow" d="'+head+'"/>';
+    }
+    var dir = x2>x1?1:-1;
+    var hx=x2 - dir*9;
+    var head='M '+x2+' '+y+' L '+hx+' '+(y-5)+' L '+hx+' '+(y+5)+' z';
+    return '<line class="arrow" x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'"/><path class="arrow" d="'+head+'"/>';
+  }
+
+  function applyFilter(){
+    var dg=document.getElementById('diagram');
+    dg.classList.toggle('focus-business',state.filter==='business');
+    dg.classList.toggle('focus-tech',state.filter==='tech');
+    [].forEach.call(dg.querySelectorAll('.row'),function(r){
+      var ft=r.dataset.ft, tt=r.dataset.tt, dim=false;
+      if(state.filter==='business') dim = (ft!=='business' && tt!=='business');
+      if(state.filter==='tech') dim = (ft==='business' && tt==='business');
+      r.classList.toggle('dimmed',dim);
+    });
+  }
+
+  function render(){
+    var f=state.flow; if(!f)return;
+    var rows=document.querySelectorAll('#diagram .row');
+    [].forEach.call(rows,function(r,i){
+      r.classList.remove('done','active');
+      if(i < state.step-1) r.classList.add('done');
+      else if(i === state.step-1) r.classList.add('active');
+      else r.style.opacity='0';
+      if(i <= state.step-1) r.style.opacity='';
+    });
+    document.getElementById('counter').textContent='Paso '+state.step+' / '+f.steps.length;
+    document.getElementById('bar').style.width=(f.steps.length? (state.step/f.steps.length*100):0)+'%';
+    var act=document.querySelector('#diagram .row.active');
+    if(act) act.scrollIntoView({behavior:'smooth',block:'center'});
+    renderPanel();
+  }
+
+  function renderPanel(){
+    var f=state.flow, p=document.getElementById('panel');
+    if(state.step===0){
+      p.innerHTML='<div class="step-tag">'+esc(f.name)+'</div><h3>Resumen del flujo</h3>'
+        +'<div class="desc">'+esc(f.summary)+'</div>'
+        +'<div class="idle" style="margin-top:18px">Presiona <b>▶ Reproducir</b> o <b>Siguiente</b> para recorrer el flujo paso a paso. Cada paso muestra qué dato viaja entre actores y componentes. Los pasos con 💡 incluyen un concepto clave del dominio.</div>';
+      return;
+    }
+    var s=f.steps[state.step-1];
+    var fa=actorsById[s.from], ta=actorsById[s.to];
+    var html='<div class="step-tag">Paso '+state.step+' de '+f.steps.length+'</div>';
+    html+='<div class="flowline"><span class="chip" data-type="'+fa.type+'">'+esc(fa.name)+'</span>'
+        + (s.self?'<span class="arrowic">↺</span>':'<span class="arrowic">→</span>')
+        + '<span class="chip" data-type="'+ta.type+'">'+esc(ta.name)+'</span></div>';
+    html+='<h3>'+esc(s.action)+'</h3>';
+    html+='<div class="desc">'+esc(s.desc||'')+'</div>';
+    if(s.data) html+='<div class="payload"><span class="k">Datos que viajan</span>'+esc(s.data)+'</div>';
+    if(s.concept) html+='<div class="concept"><div class="t">💡 '+esc(s.concept.title)+'</div><div class="b">'+esc(s.concept.body)+'</div></div>';
+    p.innerHTML=html;
+  }
+
+  function stepTo(n){
+    var max=state.flow.steps.length;
+    state.step=Math.max(0,Math.min(n,max));
+    render();
+    if(state.playing && state.step>=max) pause();
+  }
+  function togglePlay(){ state.playing?pause():play(); }
+  function play(){
+    if(!state.flow)return;
+    if(state.step>=state.flow.steps.length) state.step=0;
+    state.playing=true; document.getElementById('btn-play').textContent='⏸ Pausa';
+    tick();
+  }
+  function tick(){
+    clearTimeout(state.timer);
+    var sp=parseInt(document.getElementById('speed').value,10);
+    state.timer=setTimeout(function(){
+      if(!state.playing)return;
+      if(state.step<state.flow.steps.length){ stepTo(state.step+1); tick(); }
+      else pause();
+    }, state.step===0?300:sp);
+  }
+  function pause(){ state.playing=false; clearTimeout(state.timer); document.getElementById('btn-play').textContent='▶ Reproducir'; }
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  // init: arranca en la Visión de negocio
+  showBusiness();
+})();
+</script>
+</body>
+</html>
