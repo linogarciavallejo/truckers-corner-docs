@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truckers Corner — Modelo de Datos</title>
+<style>
+  :root{
+    --biz:#2563eb; --tech:#0d9488; --ext:#d97706;
+    --ink:#0f172a; --muted:#64748b; --line:#cbd5e1; --bg:#f1f5f9; --card:#fff; --accent:#4f46e5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:#0f172a;color:#e2e8f0;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:20}
+  header .logo{font-size:18px;font-weight:800}
+  header .logo span{color:#818cf8}
+  header .sub{font-size:12px;color:#94a3b8;margin-top:2px}
+  header a.back{color:#c7d2fe;text-decoration:none;font-size:13px;border:1px solid #334155;padding:7px 12px;border-radius:8px;background:#1e293b}
+  header a.back:hover{background:#334155;color:#fff}
+  nav.sub{position:sticky;top:64px;z-index:15;background:var(--card);border-bottom:1px solid var(--line);padding:8px 28px;display:flex;gap:6px;flex-wrap:wrap}
+  nav.sub a{font-size:12.5px;text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:6px 11px;border-radius:20px;background:#f8fafc}
+  nav.sub a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  main{max-width:1180px;margin:0 auto;padding:24px 28px 70px}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:22px}
+  .intro p{margin:0 0 8px;font-size:13.5px;line-height:1.6;color:#334155}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:#475569}
+  h2{font-size:18px;margin:30px 0 6px;padding-top:8px}
+  .note{font-size:12.5px;color:var(--muted);line-height:1.55;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 13px;margin:10px 0}
+  .diagram-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto;margin-top:10px}
+  .mermaid{min-width:600px}
+  table{border-collapse:collapse;width:100%;margin:10px 0 4px;font-size:12.5px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#1e293b;color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f8fafc}
+  code{background:#eef2ff;color:#3730a3;padding:1px 5px;border-radius:4px;font-size:11.5px}
+  .prov{white-space:nowrap;text-align:center;font-size:14px}
+  .dictsec{font-size:13.5px;font-weight:700;color:var(--accent);margin:22px 0 4px}
+  footer{max-width:1180px;margin:0 auto;padding:0 28px 50px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">Truckers<span> Corner</span> · Modelo de Datos</div>
+    <div class="sub">Modelo lógico (Mermaid ERD crow's foot) · v0.1</div>
+  </div>
+  <a class="back" href="../workflow-explorer/index.html">← Explorador de flujos</a>
+</header>
+
+<nav class="sub">
+  <a href="#a">A · Tenancy & Red</a>
+  <a href="#b">B · Loads & Booking</a>
+  <a href="#c">C · Dispatch & Ejecución</a>
+  <a href="#d">D · Billing</a>
+  <a href="#dict">Diccionario</a>
+</nav>
+
+<main>
+  <div class="intro">
+    <p><b>Modelo lógico</b> (entidades, atributos, relaciones, cardinalidad) con hints ligeros de implementación. Mapea limpio a EF Core / PostgreSQL en la fase física.</p>
+    <p>Fuentes: checklist del schema heredado + 6 Rate Confirmations reales + PDFs de proceso + decisiones cerradas (dispatcher, single-tenant v1 con scaffolding <code>TenantId</code>, DAT API, firma barata).</p>
+    <div class="legend">
+      <span>🔵 heredado (keeper)</span>
+      <span>🟢 nuevo (rate confs/proceso)</span>
+      <span>⚪ estándar/infra</span>
+    </div>
+  </div>
+
+  <h2 id="a">Grupo A — Tenancy, Red & Compliance</h2>
+  <div class="diagram-card"><pre class="mermaid">
+erDiagram
+  TENANT ||--o{ USER : "tiene"
+  TENANT ||--o{ BROKER : "tiene"
+  TENANT ||--o{ CARRIER : "tiene"
+  BROKER ||--o{ BROKER_CONTACT : "tiene"
+  CARRIER ||--o{ DRIVER : "emplea"
+  CARRIER ||--o{ TRUCK : "posee"
+  CARRIER ||--o{ TRAILER : "posee"
+  CARRIER ||--o{ INSURANCE_POLICY : "tiene"
+  CARRIER ||--o{ CARRIER_PAYMENT_METHOD : "tiene"
+  CARRIER ||--o{ CARRIER_BROKER_TERMS : "negocia"
+  BROKER ||--o{ CARRIER_BROKER_TERMS : "negocia"
+
+  TENANT {
+    bigint id PK
+    string name
+  }
+  USER {
+    bigint id PK
+    bigint tenant_id FK
+    string email
+    string role
+    int status
+  }
+  BROKER {
+    bigint id PK
+    bigint tenant_id FK
+    string name
+    string mc_number
+    string usdot_number
+    string tax_id
+    decimal bond_amount
+    string credit_rating
+    string source
+  }
+  BROKER_CONTACT {
+    bigint id PK
+    bigint broker_id FK
+    string name
+    string email
+    string phone
+  }
+  CARRIER {
+    bigint id PK
+    bigint tenant_id FK
+    string name
+    string mc_number
+    string usdot_number
+    string tax_id
+    int compliance_state
+  }
+  DRIVER {
+    bigint id PK
+    bigint carrier_id FK
+    string first_name
+    string cdl_number
+    date cdl_expiry_date
+    text endorsements
+    int compliance_state
+  }
+  TRUCK {
+    bigint id PK
+    bigint carrier_id FK
+    string vin
+    string license_plate
+    string unit_number
+    int truck_type
+    date registration_expiry_date
+    string ifta_state_number
+    int compliance_state
+  }
+  TRAILER {
+    bigint id PK
+    bigint carrier_id FK
+    string trailer_number
+    string vin
+    int trailer_type
+    date registration_expiry_date
+    int compliance_state
+  }
+  INSURANCE_POLICY {
+    bigint id PK
+    bigint carrier_id FK
+    date general_liability_end
+    date cargo_liability_end
+    bool scheduled_autos
+  }
+  COMPLIANCE_DOCUMENT {
+    bigint id PK
+    string owner_type
+    bigint owner_id
+    string doc_type
+    bigint media_id FK
+    date expiration_date
+    int status
+  }
+  CARRIER_BROKER_TERMS {
+    bigint id PK
+    bigint carrier_id FK
+    bigint broker_id FK
+    decimal commission_pct
+  }
+  CARRIER_PAYMENT_METHOD {
+    bigint id PK
+    bigint carrier_id FK
+    string stripe_customer_id
+    string last4
+    bool is_default
+  }
+</pre></div>
+  <div class="note"><b>COMPLIANCE_DOCUMENT es polimórfico</b> (<code>owner_type</code> + <code>owner_id</code>) — aplica a Broker/Carrier/Driver/Truck/Trailer. Mermaid no dibuja FKs polimórficas, por eso aparece suelta. Generaliza el "paquete de 6 documentos" heredado y habilita el monitoreo + auto-bloqueo.</div>
+
+  <h2 id="b">Grupo B — Disponibilidad, Loads, Matching & Booking</h2>
+  <div class="diagram-card"><pre class="mermaid">
+erDiagram
+  TRUCK ||--o{ TRUCK_AVAILABILITY : "se publica como"
+  BROKER ||--o{ LOAD : "publica/origina"
+  LOAD ||--o{ LOAD_STOP : "tiene"
+  TRUCK_AVAILABILITY ||--o{ OFFER : "genera"
+  LOAD ||--o{ OFFER : "aparece en"
+  LOAD ||--o| RATE_CONFIRMATION : "se confirma con"
+  RATE_CONFIRMATION ||--o{ RATE_CONF_ACCESSORIAL : "incluye"
+
+  TRUCK_AVAILABILITY {
+    bigint id PK
+    bigint tenant_id FK
+    bigint truck_id FK
+    date available_date
+    string current_location
+    string preferred_lanes
+    int equipment_type
+    decimal min_rate_per_mile
+    int status
+  }
+  LOAD {
+    bigint id PK
+    bigint tenant_id FK
+    bigint broker_id FK
+    string source
+    string pro_number
+    string commodity
+    decimal total_weight
+    decimal total_miles
+    int equipment_type
+    bool hazmat
+    bool exclusive_use
+    decimal rate_total
+    int status
+  }
+  LOAD_STOP {
+    bigint id PK
+    bigint load_id FK
+    int sequence
+    string stop_type
+    string company_name
+    text address
+    datetime appointment_start
+    datetime appointment_end
+    string scheduling
+    string reference_number
+    string bol_number
+    decimal weight
+  }
+  OFFER {
+    bigint id PK
+    bigint availability_id FK
+    bigint load_id FK
+    decimal score
+    int rank
+    decimal rate
+    int status
+  }
+  RATE_CONFIRMATION {
+    bigint id PK
+    bigint tenant_id FK
+    bigint load_id FK
+    bigint broker_id FK
+    bigint carrier_id FK
+    bigint original_pdf_media_id FK
+    bigint signed_pdf_media_id FK
+    json parsed_data
+    decimal ocr_confidence
+    int status
+    decimal total_rate
+    datetime signed_at
+  }
+  RATE_CONF_ACCESSORIAL {
+    bigint id PK
+    bigint rate_confirmation_id FK
+    string type
+    decimal amount
+    string terms
+  }
+</pre></div>
+
+  <h2 id="c">Grupo C — Order, Dispatch & Ejecución</h2>
+  <div class="diagram-card"><pre class="mermaid">
+erDiagram
+  RATE_CONFIRMATION ||--|| ORDER : "deriva en"
+  CARRIER ||--o{ ORDER : "ejecuta"
+  ORDER ||--|| DISPATCH : "genera"
+  DRIVER ||--o{ DISPATCH : "asignado a"
+  TRUCK ||--o{ DISPATCH : "asignado a"
+  TRAILER ||--o{ DISPATCH : "asignado a"
+  DISPATCH ||--o{ LOCATION_UPDATE : "emite"
+  DISPATCH ||--o{ DETENTION_EVENT : "registra"
+  DISPATCH ||--o{ TRIP_DOCUMENT : "captura"
+  DISPATCH ||--o{ INCIDENT_REPORT : "registra"
+
+  ORDER {
+    bigint id PK
+    bigint tenant_id FK
+    bigint carrier_id FK
+    bigint rate_confirmation_id FK
+    int status
+    decimal rate
+    decimal commission_amount
+    datetime closed_at
+  }
+  DISPATCH {
+    bigint id PK
+    bigint order_id FK
+    bigint driver_id FK
+    bigint truck_id FK
+    bigint trailer_id FK
+    text instructions
+    int status
+    datetime acknowledged_at
+  }
+  LOCATION_UPDATE {
+    bigint id PK
+    bigint dispatch_id FK
+    string lat
+    string lng
+    datetime recorded_at
+    int speed
+  }
+  DETENTION_EVENT {
+    bigint id PK
+    bigint dispatch_id FK
+    bigint stop_id FK
+    string type
+    datetime started_at
+    datetime ended_at
+    int duration_minutes
+    decimal amount
+  }
+  TRIP_DOCUMENT {
+    bigint id PK
+    bigint dispatch_id FK
+    string doc_type
+    bigint media_id FK
+    datetime captured_at
+    string signature_data
+  }
+  INCIDENT_REPORT {
+    bigint id PK
+    bigint dispatch_id FK
+    string type
+    text description
+    datetime reported_at
+    int status
+  }
+</pre></div>
+
+  <h2 id="d">Grupo D — Billing</h2>
+  <div class="diagram-card"><pre class="mermaid">
+erDiagram
+  ORDER ||--|| INVOICE : "factura"
+  ORDER ||--|| COMMISSION_CHARGE : "cobra"
+  CARRIER ||--o{ COMMISSION_CHARGE : "paga"
+  CARRIER_PAYMENT_METHOD ||--o{ COMMISSION_CHARGE : "usa"
+
+  INVOICE {
+    bigint id PK
+    bigint tenant_id FK
+    bigint order_id FK
+    string number
+    decimal amount
+    int status
+    bigint pdf_media_id FK
+    datetime sent_at
+  }
+  COMMISSION_CHARGE {
+    bigint id PK
+    bigint order_id FK
+    bigint carrier_id FK
+    bigint payment_method_id FK
+    decimal percentage
+    decimal base_amount
+    decimal amount
+    string stripe_charge_id
+    int status
+    datetime charged_at
+  }
+</pre></div>
+  <div class="note"><b>MEDIA</b> (⚪ infra) es referenciada por <code>media_id</code> en ComplianceDocument, RateConfirmation, TripDocument, Invoice y User. Tabla compartida: <code>id, tenant_id, type, file_path, mime, size, uploaded_by</code>.</div>
+
+  <h2 id="dict">Diccionario de datos</h2>
+
+  <div class="dictsec">Tenancy & acceso</div>
+  <table>
+    <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
+    <tr><td><b>TENANT</b></td><td>id, name</td><td class="prov">🟢</td><td>Scaffolding multi-tenant. v1 = 1 tenant (la operación del dispatcher).</td></tr>
+    <tr><td><b>USER</b></td><td>id, tenant_id, name, email, phone, password_hash, role, status, profile_media_id</td><td class="prov">🔵🟢</td><td>Hereda auth; rol nuevo (Dispatcher/Admin/Driver). N:1 con Tenant.</td></tr>
+    <tr><td><b>MEDIA</b></td><td>id, tenant_id, type, file_path, mime, size, uploaded_by</td><td class="prov">🔵</td><td>Storage genérico (R2/Blob).</td></tr>
+  </table>
+
+  <div class="dictsec">Red (Broker / Carrier / Driver / Equipo)</div>
+  <table>
+    <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
+    <tr><td><b>BROKER</b></td><td>id, tenant_id, name, mc_number, usdot_number, tax_id, bond_amount, credit_rating, source</td><td class="prov">🟢</td><td>Antes era un string. Ahora entidad con MC/USDOT/Bond/W9. <code>source</code> distingue plataforma vs DAT.</td></tr>
+    <tr><td><b>BROKER_CONTACT</b></td><td>id, broker_id, name, email, phone, role</td><td class="prov">🟢</td><td>Múltiples contactos/emails por broker (regla del PDF).</td></tr>
+    <tr><td><b>CARRIER</b></td><td>id, tenant_id, name, mc_number, usdot_number, tax_id, address, phone, email, compliance_state</td><td class="prov">🔵</td><td><b>1 Tenant → N Carriers</b> (corrige 1:1). Conserva MC/DOT/Tax.</td></tr>
+    <tr><td><b>DRIVER</b></td><td>id, carrier_id, first_name, last_name, address, phone, email, dob, cdl_number, cdl_issued_date, cdl_expiry_date, endorsements, working_days, holidays, compliance_state</td><td class="prov">🔵</td><td><b>1 Carrier → N Drivers.</b> Conserva CDL + endorsements.</td></tr>
+    <tr><td><b>TRUCK</b></td><td>id, carrier_id, truck_type, make, model, vin, license_plate, unit_number, weight, length, registration_expiry_date, register_owner, ifta_state_number, compliance_state</td><td class="prov">🔵</td><td><b>1 Carrier → N Trucks.</b> Conserva VIN/IFTA/unit#. Enum de tipo ampliado.</td></tr>
+    <tr><td><b>TRAILER</b></td><td>id, carrier_id, trailer_number, vin, trailer_type, registration_expiry_date, length, compliance_state</td><td class="prov">🟢</td><td><b>Entidad nueva</b> — el schema viejo no la tenía; las rate confs la referencian aparte.</td></tr>
+    <tr><td><b>INSURANCE_POLICY</b></td><td>id, carrier_id, agent_name/address/phone/email, general_liability_start/end, cargo_liability_start/end, scheduled_autos, scheduled_autos_details</td><td class="prov">🔵</td><td>Conserva ventanas de GL y Cargo Liability.</td></tr>
+    <tr><td><b>COMPLIANCE_DOCUMENT</b></td><td>id, owner_type, owner_id, doc_type, media_id, issue_date, expiration_date, status, verified_at</td><td class="prov">🔵🟢</td><td><b>Polimórfico.</b> Generaliza el paquete de 6 docs; habilita monitoreo + auto-bloqueo.</td></tr>
+    <tr><td><b>CARRIER_BROKER_TERMS</b></td><td>id, carrier_id, broker_id, commission_pct</td><td class="prov">🟢</td><td><b>Comisión variable por par</b> (reemplaza el 3% fijo). Excepción negociable por load en el RateConfirmation.</td></tr>
+    <tr><td><b>CARRIER_PAYMENT_METHOD</b></td><td>id, carrier_id, stripe_customer_id, type, last4, brand, is_default</td><td class="prov">🟢</td><td>Para el cargo de comisión a tarjeta (Stripe).</td></tr>
+  </table>
+
+  <div class="dictsec">Disponibilidad / Loads / Booking</div>
+  <table>
+    <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
+    <tr><td><b>TRUCK_AVAILABILITY</b></td><td>id, tenant_id, truck_id, driver_id?, available_date, current_location, preferred_lanes, equipment_type, min_rate_per_mile, status</td><td class="prov">🟢</td><td>El carrier publica capacidad (dirección correcta del flujo).</td></tr>
+    <tr><td><b>LOAD</b></td><td>id, tenant_id, broker_id, source, pro_number, commodity, total_weight, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status</td><td class="prov">🔵🟢</td><td>Separado del Order. <code>commodity</code> (antes "products"). Campos reefer/hazmat/exclusive nuevos.</td></tr>
+    <tr><td><b>LOAD_STOP</b></td><td>id, load_id, sequence, stop_type, company_name, address, lat, lng, appointment_start/end, scheduling, reference_number, po_number, bol_number, weight, contact_name, contact_phone, instructions</td><td class="prov">🟢</td><td><b>Multi-stop</b> (N pickups + N deliveries). El viejo solo tenía 1+1.</td></tr>
+    <tr><td><b>OFFER</b></td><td>id, availability_id, load_id, score, rank, rate, status</td><td class="prov">🟢</td><td>Resultado del matching (ranking).</td></tr>
+    <tr><td><b>RATE_CONFIRMATION</b></td><td>id, tenant_id, load_id, broker_id, carrier_id, original_pdf_media_id, signed_pdf_media_id, parsed_data(json), ocr_confidence, status, line_haul_rate, total_rate, pro_number, signed_at, signed_by</td><td class="prov">🟢</td><td><b>Núcleo OCR.</b> PDF original + firmado + datos extraídos + confidence. Firma barata (canvas+audit / self-hosted).</td></tr>
+    <tr><td><b>RATE_CONF_ACCESSORIAL</b></td><td>id, rate_confirmation_id, type, amount, terms</td><td class="prov">🟢</td><td>Detención, layover, TONU, lumper, live-tracking, on-time bonus.</td></tr>
+  </table>
+
+  <div class="dictsec">Order / Dispatch / Ejecución</div>
+  <table>
+    <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
+    <tr><td><b>ORDER</b></td><td>id, tenant_id, carrier_id, rate_confirmation_id, status, rate, commission_amount, created_at, closed_at</td><td class="prov">🟢</td><td><b>FK explícita a Carrier</b> (no transitiva). Entidad operacional.</td></tr>
+    <tr><td><b>DISPATCH</b></td><td>id, order_id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at</td><td class="prov">🟢</td><td><b>Asigna driver + truck + trailer.</b> Acknowledgment obligatorio.</td></tr>
+    <tr><td><b>LOCATION_UPDATE</b></td><td>id, dispatch_id, lat, lng, recorded_at, speed, heading</td><td class="prov">🟢</td><td>Tracking; particionar por fecha (crece rápido).</td></tr>
+    <tr><td><b>DETENTION_EVENT</b></td><td>id, dispatch_id, stop_id, type, started_at, ended_at, duration_minutes, rate_per_hour, amount, charge_applied</td><td class="prov">🟢</td><td>Detención &gt;2h; alimenta accesoriales/comisión.</td></tr>
+    <tr><td><b>TRIP_DOCUMENT</b></td><td>id, dispatch_id, doc_type, media_id, captured_at, captured_by, signature_data</td><td class="prov">🟢</td><td><b>BOL</b> (pickup) y <b>POD</b> (delivery) — documentos distintos.</td></tr>
+    <tr><td><b>INCIDENT_REPORT</b></td><td>id, dispatch_id, type, description, media_ids, reported_at, status</td><td class="prov">🟢</td><td>Daños/faltantes.</td></tr>
+  </table>
+
+  <div class="dictsec">Billing</div>
+  <table>
+    <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
+    <tr><td><b>INVOICE</b></td><td>id, tenant_id, order_id, number, amount, status, pdf_media_id, sent_at, received_at</td><td class="prov">🔵🟢</td><td>Invoice al broker con RateConf + POD adjuntos.</td></tr>
+    <tr><td><b>COMMISSION_CHARGE</b></td><td>id, order_id, carrier_id, payment_method_id, percentage, base_amount, amount, stripe_charge_id, status, charged_at</td><td class="prov">🟢</td><td>Comisión cobrada al <b>carrier</b> vía Stripe. Base = total + accesoriales.</td></tr>
+  </table>
+</main>
+
+<footer>
+  Modelo lógico v0.1 · Cardinalidad raíz: Tenant → Carrier → {Driver, Truck, Trailer}. Cadena: Load → RateConfirmation → Order → Dispatch. Multi-tenant: scaffolding <code>TenantId</code> en v1, productización en Fase 2. · Detalle completo en <code>data-model.md</code>.
+</footer>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>
