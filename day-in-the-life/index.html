@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truckers Corner — A Day in the Life</title>
+<style>
+  :root{
+    --biz:#2563eb; --tech:#0d9488; --ext:#d97706;
+    --ink:#0f172a; --muted:#64748b; --line:#cbd5e1; --bg:#f1f5f9; --card:#fff; --accent:#4f46e5;
+    --user:#2563eb; --event:#7c3aed; --sched:#0d9488;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:#0f172a;color:#e2e8f0;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:20}
+  header .logo{font-size:18px;font-weight:800}
+  header .logo span{color:#818cf8}
+  header .sub{font-size:12px;color:#94a3b8;margin-top:2px}
+  header .links{display:flex;gap:8px;flex-wrap:wrap}
+  header a{color:#c7d2fe;text-decoration:none;font-size:13px;border:1px solid #334155;padding:7px 12px;border-radius:8px;background:#1e293b}
+  header a:hover{background:#334155;color:#fff}
+  main{max-width:1000px;margin:0 auto;padding:24px 28px 70px}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:18px}
+  .intro h2{margin:0 0 8px;font-size:17px}
+  .intro p{margin:0 0 8px;font-size:13.5px;line-height:1.65;color:#334155}
+  .cast{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .cast div{font-size:12.5px;color:#475569;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:7px 11px}
+  .cast b{color:var(--ink)}
+
+  .triggers{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #c7d2fe;border-radius:12px;padding:16px 20px;margin-bottom:22px}
+  .triggers h2{margin:0 0 10px;font-size:15px}
+  .triggers .row{display:flex;gap:18px;flex-wrap:wrap}
+  .trig{font-size:13px;color:#334155;line-height:1.5}
+  .trig b{display:block;font-size:13.5px}
+  .tdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .u{background:var(--user)} .e{background:var(--event)} .s{background:var(--sched)}
+
+  h2.section{font-size:18px;margin:26px 0 6px}
+  .timeline{position:relative;margin-top:10px}
+  .scene{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:14px;border-left:4px solid var(--line)}
+  .scene.u{border-left-color:var(--user)} .scene.e{border-left-color:var(--event)} .scene.s{border-left-color:var(--sched)}
+  .scene .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .time{font-size:12px;font-weight:700;color:#fff;background:#0f172a;border-radius:20px;padding:3px 11px}
+  .scene h3{margin:0;font-size:15.5px}
+  .wf{font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;border:1.5px solid;margin-left:auto}
+  .scene p{margin:0 0 10px;font-size:13.5px;line-height:1.6;color:#334155}
+  .trigbox{font-size:12.5px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 11px;color:#334155}
+  .trigbox .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:10.5px;color:var(--muted);margin-right:6px}
+  .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff}
+  .badge.u{background:var(--user)} .badge.e{background:var(--event)} .badge.s{background:var(--sched)}
+
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:12.5px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#1e293b;color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f8fafc}
+  footer{max-width:1000px;margin:0 auto;padding:0 28px 50px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">Truckers<span> Corner</span> · A Day in the Life</div>
+    <div class="sub">How the business runs day-to-day — and what kicks off each workflow</div>
+  </div>
+  <div class="links">
+    <a href="../workflow-explorer/index.html">← Workflow Explorer</a>
+    <a href="../data-model/index.html">Data Model</a>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <h2>The business in one minute</h2>
+    <p><b>Truckers Corner</b> is the daily operating system for a <b>dispatcher</b> — the person who keeps trucks loaded and moving. The dispatcher works with several <b>carriers</b> (trucking companies) and their <b>drivers</b>, finds freight from <b>brokers</b> (who represent the shippers), books it, dispatches a driver, tracks the trip, and bills it.</p>
+    <p>Today this is done by hand: searching load boards, receiving rate confirmations by email in dozens of formats, printing and signing them, coordinating drivers by phone, and tracking by calling. Truckers Corner turns that scattered, manual day into one system — and <b>makes money by charging the carrier a small commission</b> on each load booked through the platform.</p>
+    <div class="cast">
+      <div><b>Dispatcher</b> — the main user (also the platform owner)</div>
+      <div><b>Driver</b> — drives the load; uses the mobile app</div>
+      <div><b>Broker</b> — sends the load &amp; the rate confirmation</div>
+      <div><b>DAT</b> — external load board (a source of freight)</div>
+    </div>
+  </div>
+
+  <div class="triggers">
+    <h2>How workflows get started — three kinds of triggers</h2>
+    <p style="margin:0 0 10px;font-size:13px;color:#3730a3;">A workflow doesn't "just run" — something kicks it off. Across Truckers Corner there are exactly three kinds of triggers. Spotting which one starts each workflow is the key to understanding the operation.</p>
+    <div class="row">
+      <div class="trig"><b><span class="tdot u"></span>👤 User-initiated</b>The dispatcher decides to do something (post a truck, assign a driver, search for loads).</div>
+      <div class="trig"><b><span class="tdot e"></span>⚡ Event-driven</b>Something arrives or completes (a broker emails a rate conf, a delivery finishes) and the system reacts.</div>
+      <div class="trig"><b><span class="tdot s"></span>⏰ Scheduled / background</b>The clock fires it (overnight compliance checks, 24h/3h pre-pickup reminders, detention timers).</div>
+    </div>
+  </div>
+
+  <h2 class="section">A typical day</h2>
+  <div class="timeline">
+
+    <div class="scene s">
+      <div class="top"><span class="time">6:30 AM</span><h3>Start the day — review compliance</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">1 · Onboarding &amp; Compliance</span></div>
+      <p>The dispatcher opens the dashboard. Overnight, the system already re-checked every carrier, driver, truck and trailer against document expirations. One flag stands out: a driver's <b>CDL expires in 8 days</b> — the system already emailed a reminder. Nothing is blocked yet, so the day can proceed.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge s">⏰ Scheduled</span> A nightly job evaluates expirations and alerts 10 days out; it auto-blocks an entity only once a required document actually lapses. The dispatcher just reviews the result.</div>
+    </div>
+
+    <div class="scene u">
+      <div class="top"><span class="time">7:00 AM</span><h3>A truck frees up — post its availability</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">2 · Posting</span></div>
+      <p>One carrier just delivered overnight; its truck is now empty in Dallas. The dispatcher posts the truck's availability: date, current location, preferred lanes, equipment (Dry Van 53'), and a minimum rate per mile.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge u">👤 User-initiated</span> Capacity became available, so the dispatcher publishes it. This is the dispatcher actively starting the workflow.</div>
+    </div>
+
+    <div class="scene e">
+      <div class="top"><span class="time">7:15 AM</span><h3>Find freight — matching against DAT</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">3 · Matching</span></div>
+      <p>The moment the truck is posted, the system searches DAT for loads that fit its lane, equipment and date, normalizes the results, and shows them ranked by rate, distance and constraints. The dispatcher scans the top options.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge e">⚡ Event-driven</span> Posting availability automatically kicks off the DAT search. <span class="badge u">👤</span> The dispatcher can also start it manually by searching for a specific lane.</div>
+    </div>
+
+    <div class="scene e">
+      <div class="top"><span class="time">8:00 AM</span><h3>A broker sends a rate confirmation — book it ★</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">4 · Booking &amp; OCR</span></div>
+      <p>The dispatcher accepts a good load and tells the broker (Allen Lund). Minutes later the broker <b>emails a Rate Confirmation PDF</b>. The dispatcher uploads it; the system reads it automatically — broker, rate, every pickup and delivery, commodity, miles, detention terms — flags two low-confidence fields for a quick human check, and the dispatcher confirms and signs. <em>This is the moment that used to take 15 minutes of manual typing.</em></p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge e">⚡ Event-driven</span> The broker's emailed rate confirmation is the spark; the dispatcher ingests it and the OCR workflow runs. The broker — not the dispatcher — sets this in motion.</div>
+    </div>
+
+    <div class="scene e">
+      <div class="top"><span class="time">8:20 AM</span><h3>Turn the contract into an order &amp; dispatch a driver</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">5 · Order &amp; Dispatch</span></div>
+      <p>Once the rate confirmation is signed, the system creates an internal <b>Order</b>. The dispatcher assigns a driver, a truck and a trailer; dispatch instructions land on the driver's phone; the driver taps <b>"Acknowledge."</b> Only then is the order active.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge e">⚡ Event-driven</span> Signing the rate conf creates the Order automatically. <span class="badge u">👤</span> The dispatcher then assigns the resources, and the driver's acknowledgment confirms it.</div>
+    </div>
+
+    <div class="scene s">
+      <div class="top"><span class="time">Through the day</span><h3>Execution — pickup, transit, delivery</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">6 · Execution</span></div>
+      <p>Automatic reminders fire <b>24h and 3h</b> before pickup. The driver checks in at the shipper, snaps a photo of the <b>BOL</b>, and starts rolling. The truck streams its location — the dispatcher watches it move on a map, and the broker gets visibility. At the destination the driver checks in, captures the <b>signed POD</b>, and logs a small damage note. If loading or unloading runs past 2 hours, a <b>detention</b> event is recorded automatically.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge s">⏰ Scheduled</span> the 24h/3h reminders. <span class="badge u">👤</span> the driver's check-ins and document captures. <span class="badge e">⚡</span> the detention timer fires on its own past the 2h threshold. Three trigger types in one workflow.</div>
+    </div>
+
+    <div class="scene e">
+      <div class="top"><span class="time">4:00 PM</span><h3>Delivered — bill it &amp; collect commission</h3><span class="wf" style="border-color:#2563eb;color:#1e3a8a;background:#dbeafe">7 · Billing</span></div>
+      <p>With the POD in hand, the system generates the invoice (rate confirmation and POD attached), sends it to the broker, and <b>charges Truckers Corner's commission to the carrier's card</b>. The order is closed.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge e">⚡ Event-driven</span> Completing the delivery (POD captured) triggers invoicing and the commission charge. No one has to remember to bill — it follows delivery.</div>
+    </div>
+
+    <div class="scene u">
+      <div class="top"><span class="time">5:00 PM</span><h3>Wrap up — the Master Web view</h3><span class="wf" style="border-color:#0d9488;color:#115e59;background:#ccfbf1">Cross-cutting · Reporting</span></div>
+      <p>The dispatcher reviews the day: loads in transit, pending confirmations, commissions earned, and profitability per carrier. Based on which trucks deliver tonight, they line up tomorrow's availability — and the cycle begins again.</p>
+      <div class="trigbox"><span class="lbl">Trigger</span><span class="badge u">👤 User-initiated</span> The dispatcher reviews and plans. Tomorrow's "truck frees up" will restart the loop at <b>Posting</b>.</div>
+    </div>
+
+  </div>
+
+  <h2 class="section">Reference — what initiates each workflow</h2>
+  <table>
+    <tr><th>Workflow</th><th>What kicks it off</th><th>Type</th><th>Result</th></tr>
+    <tr><td><b>1 · Onboarding &amp; Compliance</b></td><td>Dispatcher adds a carrier/driver/truck/broker · nightly expiration re-check</td><td>👤 User + ⏰ Scheduled</td><td>Entity Active or Blocked</td></tr>
+    <tr><td><b>2 · Posting</b></td><td>A truck becomes available (delivered / idle capacity)</td><td>👤 User</td><td>Capacity published</td></tr>
+    <tr><td><b>3 · Matching</b></td><td>Availability is posted → DAT search · or dispatcher searches a lane</td><td>⚡ Event + 👤 User</td><td>Ranked offers presented</td></tr>
+    <tr><td><b>4 · Booking &amp; OCR</b></td><td>Broker emails a rate confirmation → dispatcher ingests it</td><td>⚡ Event</td><td>Signed contract (parsed rate conf)</td></tr>
+    <tr><td><b>5 · Order &amp; Dispatch</b></td><td>Rate conf signed → Order created → dispatcher assigns driver/truck/trailer</td><td>⚡ Event + 👤 User</td><td>Driver dispatched &amp; acknowledged</td></tr>
+    <tr><td><b>6 · Execution</b></td><td>24h/3h reminders · driver check-ins &amp; captures · detention timer</td><td>⏰ Scheduled + 👤 User + ⚡ Event</td><td>Load delivered with BOL/POD</td></tr>
+    <tr><td><b>7 · Billing</b></td><td>Delivery completes (POD captured)</td><td>⚡ Event</td><td>Invoice sent · commission charged · order closed</td></tr>
+  </table>
+
+  <p style="font-size:13px;color:#475569;line-height:1.6;margin-top:14px;">The big idea: most of the dispatcher's day is <b>not</b> typing data — it's <b>making decisions</b> (which load, which driver) while the platform handles the busywork. The workflows chain together: <b>Posting → Matching → Booking → Order &amp; Dispatch → Execution → Billing</b>, then back to Posting. See the <a href="../workflow-explorer/index.html" style="color:var(--accent)">Workflow Explorer</a> for the step-by-step data flow of each one.</p>
+</main>
+
+<footer>
+  Truckers Corner · A Day in the Life · Companion to the Workflow Explorer and the Data Model.
+</footer>
+</body>
+</html>
