@@ -157,6 +157,43 @@
   </table>
 
   <p style="font-size:13px;color:#475569;line-height:1.6;margin-top:14px;">The big idea: most of the dispatcher's day is <b>not</b> typing data — it's <b>making decisions</b> (which load, which driver) while the platform handles the busywork. The workflows chain together: <b>Posting → Matching → Booking → Order &amp; Dispatch → Execution → Billing</b>, then back to Posting. See the <a href="../workflow-explorer/index.html" style="color:var(--accent)">Workflow Explorer</a> for the step-by-step data flow of each one.</p>
+  <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:11px 15px;margin:34px 0 6px;font-size:12.5px;color:#991b1b">
+    🔒 <b>INTERNAL — effort &amp; cost rationale.</b> Talking points to defend the quote in the partner discussion. <b>Remove or hide this section before sharing with the client.</b>
+  </div>
+
+  <h2 class="section">Behind the simplicity — why each phase is real engineering ($$$)</h2>
+  <p style="font-size:13.5px;color:#334155;line-height:1.65">The day above looks effortless — <b>that is the whole point.</b> Good software hides its complexity. But "looks simple to use" and "is simple to build" are opposites: the smoother the experience, the more engineering sits underneath. Here is what each phase <em>actually</em> requires, and why the effort (and therefore the price) is what it is.</p>
+
+  <table>
+    <tr><th style="width:18%">Phase</th><th style="width:26%">Looks like…</th><th>…actually requires</th><th style="width:13%">Effort</th></tr>
+    <tr><td><b>0 · Foundations</b></td><td>"Just project setup."</td><td>The load-bearing base nothing shows but everything needs: multi-tenant scaffolding across every table, secure auth (JWT + refresh rotation, hashed credentials, roles), CI/CD, and the React shell &amp; navigation.</td><td>130–190 h</td></tr>
+    <tr><td><b>1 · Onboarding &amp; Compliance</b></td><td>"A few registration forms."</td><td>Four entity flows (Broker/Carrier/Driver/Equipment) with document upload, a multi-cardinality model (1 carrier → N drivers/trucks/trailers), <b>plus a compliance engine</b>: expiration tracking, 10-day alerts, and cascade auto-block (a lapsed CDL blocks that driver's assignments). FMCSA integration + scheduled jobs. This is business-rule logic, not CRUD.</td><td>200–280 h</td></tr>
+    <tr><td><b>2 · Posting + Matching + DAT</b></td><td>"Search for loads."</td><td>Integrating an <b>external load board</b> (auth, rate limits, their data formats, deduplication, failure/retry handling) plus a ranking engine that normalizes heterogeneous offers and sorts by price, distance and constraints. External integrations always cost more than they look.</td><td>170–240 h</td></tr>
+    <tr><td><b>3 · Rate Conf + OCR</b></td><td>"Upload a PDF."</td><td>An AI service that <b>reliably reads 6+ wildly different broker formats — including messy faxed scans with handwriting.</b> Accuracy tuning is iterative research, not deterministic code. Plus multi-stop modeling, the validation/correction UI, and e-signature. This is the differentiator the previous vendor never touched.</td><td>220–320 h</td></tr>
+    <tr><td><b>4 · Order &amp; Dispatch + Execution + Mobile</b></td><td>"A driver app."</td><td><b>The single hardest, largest phase.</b> Two mobile platforms with background GPS (battery, OS permissions, App Store scrutiny), camera capture (BOL/POD), push, offline handling, real-device testing — plus real-time tracking (SignalR), the dispatch state machine, acknowledgment, and detention timers.</td><td>320–460 h</td></tr>
+    <tr><td><b>5 · Billing + Commission</b></td><td>"Send an invoice."</td><td><b>Money — you can't be "approximately right."</b> Variable commission rules (per carrier-broker, on total + accessorials), Stripe integration (cards on file, charges, webhooks, failed-charge handling, PCI via Stripe Elements), and invoice generation with attachments.</td><td>150–220 h</td></tr>
+    <tr><td><b>6 · Master Web + launch</b></td><td>"A dashboard."</td><td>"The last 20%" that is non-negotiable for a real launch: reporting queries &amp; aggregations, internationalization across all UI, security hardening, end-to-end testing, <b>App Store + Google Play review cycles</b>, and production deployment.</td><td>150–220 h</td></tr>
+    <tr><td colspan="3"><b>Total</b></td><td><b>1,350–1,950 h</b></td></tr>
+  </table>
+
+  <h2 class="section">Cost multipliers that touch every phase</h2>
+  <table>
+    <tr><th style="width:34%">Driver</th><th>Why it raises the floor</th></tr>
+    <tr><td><b>6 external integrations</b></td><td>DAT, Stripe, FMCSA, FCM/APNs, the OCR model, e-signature — each with its own auth, sandbox, edge cases and failure modes. Integrations are where schedules quietly bleed.</td></tr>
+    <tr><td><b>4 runtimes to build &amp; ship</b></td><td>.NET API + React web + React Native mobile + Python OCR service. Each is built, tested and deployed separately.</td></tr>
+    <tr><td><b>A high-correctness domain</b></td><td>Money + federal compliance (FMCSA) + legally binding contracts (rate confs) + App Store gatekeeping. You can't ship "mostly works" — the bar is correctness, not demo.</td></tr>
+    <tr><td><b>AI/OCR is iterative</b></td><td>Hitting reliable extraction across 6+ formats is research, not a one-shot. It's the highest-value and highest-uncertainty piece — hence the Phase-3 recalibration checkpoint.</td></tr>
+  </table>
+
+  <h2 class="section">So… why $45,000?</h2>
+  <p style="font-size:13.5px;color:#334155;line-height:1.65">A U.S. shop bills this at <b>$150,000+</b>; the nearshore value of this scope is <b>$74,000–107,000</b>. At <b>$45,000</b> the real question isn't "why so much" — it's <b>"how is it only $45k?"</b> The answer: one senior developer with heavy AI leverage, plus a deliberate ~50% relationship discount. That's the floor, not the ceiling.</p>
+  <p style="font-size:13.5px;color:#334155;line-height:1.65"><b>And the cautionary tale is the previous vendor.</b> They were cheap — and they delivered only the easy ~17% (login/registration shells) while skipping <b>100% of the expensive core</b>: matching, OCR, dispatch, mobile, billing. <em>That</em> is exactly why it failed and why money was lost. Cheap-by-skipping-the-hard-part is the trap. The $45k funds the 83% that actually makes the business run — the part nobody built before.</p>
+  <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:13px 16px;margin-top:12px;font-size:13.5px;color:#3730a3;line-height:1.6">
+    <b>One-liners for the call:</b><br>
+    • "It looks simple <em>because</em> it's hard to build — that's what good software does."<br>
+    • "The previous vendor was cheap because it built the easy 17% and skipped the expensive 83%. That's why it failed. $45k buys the 83% that runs the business."<br>
+    • "We're not debating whether $45k is a lot — a U.S. shop charges $150k+. We're giving a ~50% discount on work that a domain expert client will recognize as real."
+  </div>
 </main>
 
 <footer>
