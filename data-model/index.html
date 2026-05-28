@@ -187,6 +187,8 @@ erDiagram
   <div class="diagram-card"><pre class="mermaid">
 erDiagram
   TRUCK ||--o{ TRUCK_AVAILABILITY : "se publica como"
+  TRUCK_AVAILABILITY ||--o{ AVAILABILITY_BROADCAST : "difunde por email"
+  BROKER ||--o{ AVAILABILITY_BROADCAST : "recibe"
   BROKER ||--o{ LOAD : "publica/origina"
   LOAD ||--o{ LOAD_STOP : "tiene"
   TRUCK_AVAILABILITY ||--o{ OFFER : "genera"
@@ -264,6 +266,13 @@ erDiagram
     decimal amount
     string terms
   }
+  AVAILABILITY_BROADCAST {
+    bigint id PK
+    bigint availability_id FK
+    bigint broker_id FK
+    datetime sent_at
+    int status
+  }
 </pre></div>
 
   <h2 id="c">Grupo C — Order, Dispatch & Ejecución</h2>
@@ -271,7 +280,7 @@ erDiagram
 erDiagram
   RATE_CONFIRMATION ||--|| ORDER : "deriva en"
   CARRIER ||--o{ ORDER : "ejecuta"
-  ORDER ||--|| DISPATCH : "genera"
+  DISPATCH ||--o{ ORDER : "agrupa (multi-carga manual)"
   DRIVER ||--o{ DISPATCH : "asignado a"
   TRUCK ||--o{ DISPATCH : "asignado a"
   TRAILER ||--o{ DISPATCH : "asignado a"
@@ -285,6 +294,7 @@ erDiagram
     bigint tenant_id FK
     bigint carrier_id FK
     bigint rate_confirmation_id FK
+    bigint dispatch_id FK
     int status
     decimal rate
     decimal commission_amount
@@ -292,7 +302,6 @@ erDiagram
   }
   DISPATCH {
     bigint id PK
-    bigint order_id FK
     bigint driver_id FK
     bigint truck_id FK
     bigint trailer_id FK
@@ -401,6 +410,7 @@ erDiagram
     <tr><td><b>LOAD</b></td><td>id, tenant_id, broker_id, source, pro_number, commodity, total_weight, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status</td><td class="prov">🔵🟢</td><td>Separado del Order. <code>commodity</code> (antes "products"). Campos reefer/hazmat/exclusive nuevos.</td></tr>
     <tr><td><b>LOAD_STOP</b></td><td>id, load_id, sequence, stop_type, company_name, address, lat, lng, appointment_start/end, scheduling, reference_number, po_number, bol_number, weight, contact_name, contact_phone, instructions</td><td class="prov">🟢</td><td><b>Multi-stop</b> (N pickups + N deliveries). El viejo solo tenía 1+1.</td></tr>
     <tr><td><b>OFFER</b></td><td>id, availability_id, load_id, score, rank, rate, status</td><td class="prov">🟢</td><td>Resultado del matching (ranking).</td></tr>
+    <tr><td><b>AVAILABILITY_BROADCAST</b></td><td>id, availability_id, broker_id, sent_at, status</td><td class="prov">🟢</td><td><b>Broadcast a brokers</b> — por cada broker al que se difunde por email la disponibilidad. Las respuestas (rate confs) entran al OCR.</td></tr>
     <tr><td><b>RATE_CONFIRMATION</b></td><td>id, tenant_id, load_id, broker_id, carrier_id, original_pdf_media_id, signed_pdf_media_id, parsed_data(json), ocr_confidence, status, line_haul_rate, total_rate, pro_number, signed_at, signed_by</td><td class="prov">🟢</td><td><b>Núcleo OCR.</b> PDF original + firmado + datos extraídos + confidence. Firma barata (canvas+audit / self-hosted).</td></tr>
     <tr><td><b>RATE_CONF_ACCESSORIAL</b></td><td>id, rate_confirmation_id, type, amount, terms</td><td class="prov">🟢</td><td>Detención, layover, TONU, lumper, live-tracking, on-time bonus.</td></tr>
   </table>
@@ -408,8 +418,8 @@ erDiagram
   <div class="dictsec">Order / Dispatch / Ejecución</div>
   <table>
     <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
-    <tr><td><b>ORDER</b></td><td>id, tenant_id, carrier_id, rate_confirmation_id, status, rate, commission_amount, created_at, closed_at</td><td class="prov">🟢</td><td><b>FK explícita a Carrier</b> (no transitiva). Entidad operacional.</td></tr>
-    <tr><td><b>DISPATCH</b></td><td>id, order_id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at</td><td class="prov">🟢</td><td><b>Asigna driver + truck + trailer.</b> Acknowledgment obligatorio.</td></tr>
+    <tr><td><b>ORDER</b></td><td>id, tenant_id, carrier_id, rate_confirmation_id, <b>dispatch_id</b>, status, rate, commission_amount, created_at, closed_at</td><td class="prov">🟢</td><td><b>FK explícita a Carrier</b>. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → <b>multi-carga manual</b>).</td></tr>
+    <tr><td><b>DISPATCH</b> (viaje del camión)</td><td>id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at</td><td class="prov">🟢</td><td>El <b>viaje de un camión</b>; <b>agrupa 1..N Orders (multi-carga manual)</b> — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio.</td></tr>
     <tr><td><b>LOCATION_UPDATE</b></td><td>id, dispatch_id, lat, lng, recorded_at, speed, heading</td><td class="prov">🟢</td><td>Tracking; particionar por fecha (crece rápido).</td></tr>
     <tr><td><b>DETENTION_EVENT</b></td><td>id, dispatch_id, stop_id, type, started_at, ended_at, duration_minutes, rate_per_hour, amount, charge_applied</td><td class="prov">🟢</td><td>Detención &gt;2h; alimenta accesoriales/comisión.</td></tr>
     <tr><td><b>TRIP_DOCUMENT</b></td><td>id, dispatch_id, doc_type, media_id, captured_at, captured_by, signature_data</td><td class="prov">🟢</td><td><b>BOL</b> (pickup) y <b>POD</b> (delivery) — documentos distintos.</td></tr>

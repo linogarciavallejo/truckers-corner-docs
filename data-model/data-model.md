@@ -132,6 +132,8 @@ erDiagram
 ```mermaid
 erDiagram
   TRUCK ||--o{ TRUCK_AVAILABILITY : "se publica como"
+  TRUCK_AVAILABILITY ||--o{ AVAILABILITY_BROADCAST : "difunde por email"
+  BROKER ||--o{ AVAILABILITY_BROADCAST : "recibe"
   BROKER ||--o{ LOAD : "publica/origina"
   LOAD ||--o{ LOAD_STOP : "tiene"
   TRUCK_AVAILABILITY ||--o{ OFFER : "genera"
@@ -215,6 +217,13 @@ erDiagram
     decimal amount
     string terms
   }
+  AVAILABILITY_BROADCAST {
+    bigint id PK
+    bigint availability_id FK
+    bigint broker_id FK
+    datetime sent_at
+    int status "Sent|Replied|NoResponse"
+  }
 ```
 
 ---
@@ -225,7 +234,7 @@ erDiagram
 erDiagram
   RATE_CONFIRMATION ||--|| ORDER : "deriva en"
   CARRIER ||--o{ ORDER : "ejecuta"
-  ORDER ||--|| DISPATCH : "genera"
+  DISPATCH ||--o{ ORDER : "agrupa (multi-carga manual)"
   DRIVER  ||--o{ DISPATCH : "asignado a"
   TRUCK   ||--o{ DISPATCH : "asignado a"
   TRAILER ||--o{ DISPATCH : "asignado a"
@@ -239,6 +248,7 @@ erDiagram
     bigint tenant_id FK
     bigint carrier_id FK
     bigint rate_confirmation_id FK
+    bigint dispatch_id FK
     int status
     decimal rate
     decimal commission_amount
@@ -246,7 +256,6 @@ erDiagram
   }
   DISPATCH {
     bigint id PK
-    bigint order_id FK
     bigint driver_id FK
     bigint truck_id FK
     bigint trailer_id FK
@@ -359,14 +368,15 @@ erDiagram
 | **LOAD** | id, tenant_id, broker_id, source, pro_number, commodity, total_weight, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status | 🔵→🟢 | Separado del Order. `commodity` (antes "products"). Campos reefer/hazmat/exclusive nuevos. |
 | **LOAD_STOP** | id, load_id, sequence, stop_type, company_name, address, lat, lng, appointment_start/end, scheduling, reference_number, po_number, bol_number, weight, contact_name, contact_phone, instructions | 🟢 | **Multi-stop** (N pickups + N deliveries). El viejo solo tenía 1+1. |
 | **OFFER** | id, availability_id, load_id, score, rank, rate, status | 🟢 | Resultado del matching (ranking). |
+| **AVAILABILITY_BROADCAST** | id, availability_id, broker_id, sent_at, status | 🟢 | **Broadcast a brokers** — por cada broker al que se difunde por email la disponibilidad/oportunidad. Las respuestas (rate confs) entran al OCR. |
 | **RATE_CONFIRMATION** | id, tenant_id, load_id, broker_id, carrier_id, original_pdf_media_id, signed_pdf_media_id, parsed_data(json), ocr_confidence, status, line_haul_rate, total_rate, pro_number, signed_at, signed_by | 🟢 | **Núcleo OCR.** PDF original + firmado + datos extraídos + confidence. Firma barata (canvas+audit / self-hosted). |
 | **RATE_CONF_ACCESSORIAL** | id, rate_confirmation_id, type, amount, terms | 🟢 | Detención, layover, TONU, lumper, live-tracking, on-time bonus. |
 
 ### Order / Dispatch / Ejecución
 | Entidad | Atributos clave | Provenance | Notas |
 |---|---|---|---|
-| **ORDER** | id, tenant_id, carrier_id, rate_confirmation_id, status, rate, commission_amount, created_at, closed_at | 🟢 | **FK explícita a Carrier** (no transitiva). Entidad operacional. |
-| **DISPATCH** | id, order_id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at | 🟢 | **Asigna driver + truck + trailer.** Acknowledgment obligatorio. |
+| **ORDER** | id, tenant_id, carrier_id, rate_confirmation_id, **dispatch_id**, status, rate, commission_amount, created_at, closed_at | 🟢 | **FK explícita a Carrier**. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → **multi-carga manual**). |
+| **DISPATCH** (viaje del camión) | id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at | 🟢 | El **viaje de un camión**; **agrupa 1..N Orders (multi-carga manual)** — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio. |
 | **LOCATION_UPDATE** | id, dispatch_id, lat, lng, recorded_at, speed, heading | 🟢 | Tracking; particionar por fecha (crece rápido). |
 | **DETENTION_EVENT** | id, dispatch_id, stop_id, type, started_at, ended_at, duration_minutes, rate_per_hour, amount, charge_applied | 🟢 | Detención >2h; alimenta accesoriales/comisión. |
 | **TRIP_DOCUMENT** | id, dispatch_id, doc_type, media_id, captured_at, captured_by, signature_data | 🟢 | **BOL** (pickup) y **POD** (delivery) — documentos distintos. |
@@ -383,7 +393,8 @@ erDiagram
 ## Notas de diseño
 
 - **Cardinalidad raíz:** `Tenant → Carrier → {Driver, Truck, Trailer}` (todo 1:N). Corrige el 1:1-desde-User del schema heredado. Los varios carriers que coordina el cliente (Nelson, P Munoz, SPH, LRVS) son **N Carriers dentro de 1 Tenant** — no requieren multi-tenant en v1.
-- **Cadena contractual→operacional:** `Load → RateConfirmation (1:0..1) → Order (1:1) → Dispatch (1:1)`. Tres entidades separadas (no fusionadas como el viejo `freight_jobs`).
+- **Cadena contractual→operacional:** `Load → RateConfirmation (1:0..1) → Order`; un **Dispatch (viaje del camión) agrupa 1..N Orders** (**multi-carga manual** — el dispatcher combina y secuencia los stops a mano). Entidades separadas (no fusionadas como el viejo `freight_jobs`).
+- **Broadcast a brokers:** al publicar una `TruckAvailability` se envía la oportunidad por email a los brokers del catálogo (`AvailabilityBroadcast` por broker); las respuestas (rate confs) entran al flujo de OCR.
 - **Compliance transversal:** `ComplianceDocument` polimórfico + estado `compliance_state` en Broker/Carrier/Driver/Truck/Trailer. Job diario evalúa expiraciones, alerta 10 días antes, y bloquea en cascada (un Driver/Truck Blocked no es asignable a Dispatch).
 - **Multi-tenancy (Fase 2):** `TenantId` ya está en todas las entidades de cabecera (scaffolding). La productización (onboarding de tenants, billing por tenant) se agrega después sin refactor.
 - **Índices clave (hint físico):** mc_number, usdot_number, vin, license_plate, ifta_state_number, expiration_date (compliance), dispatch_id+recorded_at (tracking), tenant_id (todas).
