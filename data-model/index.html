@@ -61,7 +61,7 @@
 <main>
   <div class="intro">
     <p><b>Modelo lógico</b> (entidades, atributos, relaciones, cardinalidad) con hints ligeros de implementación. Mapea limpio a EF Core / PostgreSQL en la fase física.</p>
-    <p>Fuentes: checklist del schema heredado + 6 Rate Confirmations reales + PDFs de proceso + decisiones cerradas (dispatcher, single-tenant v1 con scaffolding <code>TenantId</code>, DAT API, firma barata).</p>
+    <p>Fuentes: checklist del schema heredado + 6 Rate Confirmations reales + PDFs de proceso + <b>15 documentos de proceso del análisis</b> (<code>docs/Analysis</code>) + decisiones cerradas (dispatcher, single-tenant v1 con scaffolding <code>TenantId</code>, DAT API, firma barata).</p>
     <div class="legend">
       <span>🔵 heredado (keeper)</span>
       <span>🟢 nuevo (rate confs/proceso)</span>
@@ -204,6 +204,14 @@ erDiagram
     string current_location
     string preferred_lanes
     int equipment_type
+    int load_type
+    int total_pallets
+    int available_pallets
+    decimal weight_capacity
+    int reefer_min_temp
+    int reefer_max_temp
+    string securement
+    text special_instructions
     decimal min_rate_per_mile
     int status
   }
@@ -215,6 +223,7 @@ erDiagram
     string pro_number
     string commodity
     decimal total_weight
+    int pallet_count
     decimal total_miles
     int equipment_type
     bool hazmat
@@ -299,6 +308,7 @@ erDiagram
     decimal rate
     decimal commission_amount
     datetime closed_at
+    datetime locked_at
   }
   DISPATCH {
     bigint id PK
@@ -307,6 +317,7 @@ erDiagram
     bigint trailer_id FK
     text instructions
     int status
+    datetime current_eta
     datetime acknowledged_at
   }
   LOCATION_UPDATE {
@@ -332,6 +343,7 @@ erDiagram
     bigint dispatch_id FK
     string doc_type
     bigint media_id FK
+    string seal_number
     datetime captured_at
     string signature_data
   }
@@ -342,17 +354,30 @@ erDiagram
     text description
     datetime reported_at
     int status
+    text resolution
+    datetime resolved_at
   }
 </pre></div>
 
   <h2 id="d">Grupo D — Billing</h2>
   <div class="diagram-card"><pre class="mermaid">
 erDiagram
+  ORDER ||--o{ ACCESSORIAL_CHARGE : "incurre"
   ORDER ||--|| INVOICE : "factura"
   ORDER ||--|| COMMISSION_CHARGE : "cobra"
   CARRIER ||--o{ COMMISSION_CHARGE : "paga"
   CARRIER_PAYMENT_METHOD ||--o{ COMMISSION_CHARGE : "usa"
 
+  ACCESSORIAL_CHARGE {
+    bigint id PK
+    bigint order_id FK
+    bigint detention_event_id FK
+    string type
+    decimal amount
+    string evidence_media_ids
+    int status
+    datetime approved_at
+  }
   INVOICE {
     bigint id PK
     bigint tenant_id FK
@@ -398,7 +423,7 @@ erDiagram
     <tr><td><b>TRUCK</b></td><td>id, carrier_id, truck_type, make, model, vin, license_plate, unit_number, weight, length, registration_expiry_date, register_owner, ifta_state_number, compliance_state</td><td class="prov">🔵</td><td><b>1 Carrier → N Trucks.</b> Conserva VIN/IFTA/unit#. Enum de tipo ampliado.</td></tr>
     <tr><td><b>TRAILER</b></td><td>id, carrier_id, trailer_number, vin, trailer_type, registration_expiry_date, length, compliance_state</td><td class="prov">🟢</td><td><b>Entidad nueva</b> — el schema viejo no la tenía; las rate confs la referencian aparte.</td></tr>
     <tr><td><b>INSURANCE_POLICY</b></td><td>id, carrier_id, agent_name/address/phone/email, general_liability_start/end, cargo_liability_start/end, scheduled_autos, scheduled_autos_details</td><td class="prov">🔵</td><td>Conserva ventanas de GL y Cargo Liability.</td></tr>
-    <tr><td><b>COMPLIANCE_DOCUMENT</b></td><td>id, owner_type, owner_id, doc_type, media_id, issue_date, expiration_date, status, verified_at</td><td class="prov">🔵🟢</td><td><b>Polimórfico.</b> Generaliza el paquete de 6 docs; habilita monitoreo + auto-bloqueo.</td></tr>
+    <tr><td><b>COMPLIANCE_DOCUMENT</b></td><td>id, owner_type, owner_id, doc_type, media_id, issue_date, expiration_date, status, verified_at</td><td class="prov">🔵🟢</td><td><b>Polimórfico.</b> Generaliza el paquete de 6 docs; habilita monitoreo + auto-bloqueo. Tipos ampliados (análisis): medical card, inspecciones, permisos, hazmat cert, TWIC. Ventanas de alerta <b>configurables</b> (30/15/10/7 días).</td></tr>
     <tr><td><b>CARRIER_BROKER_TERMS</b></td><td>id, carrier_id, broker_id, commission_pct</td><td class="prov">🟢</td><td><b>Comisión variable por par</b> (reemplaza el 3% fijo). Excepción negociable por load en el RateConfirmation.</td></tr>
     <tr><td><b>CARRIER_PAYMENT_METHOD</b></td><td>id, carrier_id, stripe_customer_id, type, last4, brand, is_default</td><td class="prov">🟢</td><td>Para el cargo de comisión a tarjeta (Stripe).</td></tr>
   </table>
@@ -406,8 +431,8 @@ erDiagram
   <div class="dictsec">Disponibilidad / Loads / Booking</div>
   <table>
     <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
-    <tr><td><b>TRUCK_AVAILABILITY</b></td><td>id, tenant_id, truck_id, driver_id?, available_date, current_location, preferred_lanes, equipment_type, min_rate_per_mile, status</td><td class="prov">🟢</td><td>El carrier publica capacidad (dirección correcta del flujo).</td></tr>
-    <tr><td><b>LOAD</b></td><td>id, tenant_id, broker_id, source, pro_number, commodity, total_weight, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status</td><td class="prov">🔵🟢</td><td>Separado del Order. <code>commodity</code> (antes "products"). Campos reefer/hazmat/exclusive nuevos.</td></tr>
+    <tr><td><b>TRUCK_AVAILABILITY</b></td><td>id, tenant_id, truck_id, driver_id?, available_date, current_location, preferred_lanes, equipment_type, <b>load_type (FTL|LTL), total_pallets, available_pallets, weight_capacity, reefer_min/max_temp, securement, special_instructions</b>, min_rate_per_mile, status</td><td class="prov">🟢</td><td>El carrier publica capacidad (dirección correcta del flujo). <b>Capacidad explícita</b> (Proceso 01): FTL = no admite más cargas; LTL = capacidad restante disponible para combinar (multi-carga manual).</td></tr>
+    <tr><td><b>LOAD</b></td><td>id, tenant_id, broker_id, source, pro_number, commodity, total_weight, <b>pallet_count</b>, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status</td><td class="prov">🔵🟢</td><td>Separado del Order. <code>commodity</code> (antes "products"). Campos reefer/hazmat/exclusive nuevos. <code>pallet_count</code> valida capacidad asignada vs cargada.</td></tr>
     <tr><td><b>LOAD_STOP</b></td><td>id, load_id, sequence, stop_type, company_name, address, lat, lng, appointment_start/end, scheduling, reference_number, po_number, bol_number, weight, contact_name, contact_phone, instructions</td><td class="prov">🟢</td><td><b>Multi-stop</b> (N pickups + N deliveries). El viejo solo tenía 1+1.</td></tr>
     <tr><td><b>OFFER</b></td><td>id, availability_id, load_id, score, rank, rate, status</td><td class="prov">🟢</td><td>Resultado del matching (ranking).</td></tr>
     <tr><td><b>AVAILABILITY_BROADCAST</b></td><td>id, availability_id, broker_id, sent_at, status</td><td class="prov">🟢</td><td><b>Broadcast a brokers</b> — por cada broker al que se difunde por email la disponibilidad. Las respuestas (rate confs) entran al OCR.</td></tr>
@@ -418,24 +443,25 @@ erDiagram
   <div class="dictsec">Order / Dispatch / Ejecución</div>
   <table>
     <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
-    <tr><td><b>ORDER</b></td><td>id, tenant_id, carrier_id, rate_confirmation_id, <b>dispatch_id</b>, status, rate, commission_amount, created_at, closed_at</td><td class="prov">🟢</td><td><b>FK explícita a Carrier</b>. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → <b>multi-carga manual</b>).</td></tr>
-    <tr><td><b>DISPATCH</b> (viaje del camión)</td><td>id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at</td><td class="prov">🟢</td><td>El <b>viaje de un camión</b>; <b>agrupa 1..N Orders (multi-carga manual)</b> — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio.</td></tr>
+    <tr><td><b>ORDER</b></td><td>id, tenant_id, carrier_id, rate_confirmation_id, <b>dispatch_id</b>, status, rate, commission_amount, created_at, closed_at, <b>locked_at</b></td><td class="prov">🟢</td><td><b>FK explícita a Carrier</b>. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → <b>multi-carga manual</b>). <b>Cierre formal</b> (Proceso 10): checklist → <code>locked_at</code> → registros inmutables.</td></tr>
+    <tr><td><b>DISPATCH</b> (viaje del camión)</td><td>id, driver_id, truck_id, trailer_id, instructions, status, <b>current_eta</b>, acknowledged_at</td><td class="prov">🟢</td><td>El <b>viaje de un camión</b>; <b>agrupa 1..N Orders (multi-carga manual)</b> — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio. Estado <b>EnRouteToPickup</b> (Proceso 05): tracking desde el acknowledgment, ETA recalculada, llegada por geofence.</td></tr>
     <tr><td><b>LOCATION_UPDATE</b></td><td>id, dispatch_id, lat, lng, recorded_at, speed, heading</td><td class="prov">🟢</td><td>Tracking; particionar por fecha (crece rápido).</td></tr>
     <tr><td><b>DETENTION_EVENT</b></td><td>id, dispatch_id, stop_id, type, started_at, ended_at, duration_minutes, rate_per_hour, amount, charge_applied</td><td class="prov">🟢</td><td>Detención &gt;2h; alimenta accesoriales/comisión.</td></tr>
-    <tr><td><b>TRIP_DOCUMENT</b></td><td>id, dispatch_id, doc_type, media_id, captured_at, captured_by, signature_data</td><td class="prov">🟢</td><td><b>BOL</b> (pickup) y <b>POD</b> (delivery) — documentos distintos.</td></tr>
-    <tr><td><b>INCIDENT_REPORT</b></td><td>id, dispatch_id, type, description, media_ids, reported_at, status</td><td class="prov">🟢</td><td>Daños/faltantes.</td></tr>
+    <tr><td><b>TRIP_DOCUMENT</b></td><td>id, dispatch_id, doc_type, media_id, <b>seal_number</b>, captured_at, captured_by, signature_data</td><td class="prov">🟢</td><td><b>BOL</b> (pickup) y <b>POD</b> (delivery) — documentos distintos. Tipos ampliados: weight/scale tickets, lumper receipts, temperature logs, fotos. Seal registrado al cargar, verificado al entregar.</td></tr>
+    <tr><td><b>INCIDENT_REPORT</b></td><td>id, dispatch_id, type, description, media_ids, reported_at, status, <b>resolution, resolved_at</b></td><td class="prov">🟢</td><td>Excepciones de ejecución: daños, faltantes (shortage), <b>sobrantes (overage), rechazos (refused), violación de temperatura</b>. Las críticas se resuelven antes del cierre.</td></tr>
   </table>
 
   <div class="dictsec">Billing</div>
   <table>
     <tr><th>Entidad</th><th>Atributos clave</th><th class="prov">Prov.</th><th>Notas</th></tr>
-    <tr><td><b>INVOICE</b></td><td>id, tenant_id, order_id, number, amount, status, pdf_media_id, sent_at, received_at</td><td class="prov">🔵🟢</td><td>Invoice al broker con RateConf + POD adjuntos.</td></tr>
+    <tr><td><b>ACCESSORIAL_CHARGE</b></td><td>id, order_id, detention_event_id?, type, amount, evidence_media_ids, status, approved_at</td><td class="prov">🟢</td><td><b>Cargo accesorial incurrido</b> (Proceso 09): detención, lumper, equipo, manejo especial, millas extra. Con <b>evidencia</b> y estado de aprobación del broker (por email en v1). Distinto de <code>RATE_CONF_ACCESSORIAL</code> (términos pactados).</td></tr>
+    <tr><td><b>INVOICE</b></td><td>id, tenant_id, order_id, number, amount, status, pdf_media_id, sent_at, received_at</td><td class="prov">🔵🟢</td><td>Invoice al broker con RateConf + POD + <b>accesoriales aprobados (con evidencia)</b> adjuntos.</td></tr>
     <tr><td><b>COMMISSION_CHARGE</b></td><td>id, order_id, carrier_id, payment_method_id, percentage, base_amount, amount, stripe_charge_id, status, charged_at</td><td class="prov">🟢</td><td>Comisión cobrada al <b>carrier</b> vía Stripe. Base = total + accesoriales.</td></tr>
   </table>
 </main>
 
 <footer>
-  Modelo lógico v0.1 · Cardinalidad raíz: Tenant → Carrier → {Driver, Truck, Trailer}. Cadena: Load → RateConfirmation → Order → Dispatch. Multi-tenant: scaffolding <code>TenantId</code> en v1, productización en Fase 2. · Detalle completo en <code>data-model.md</code>.
+  Modelo lógico v0.2 · Cardinalidad raíz: Tenant → Carrier → {Driver, Truck, Trailer}. Cadena: Load → RateConfirmation → Order → Dispatch. Regla FTL/LTL para multi-carga manual · Pre-pickup tracking · Accesoriales con evidencia · Cierre formal e inmutable. Multi-tenant: scaffolding <code>TenantId</code> en v1, productización en Fase 2. · Detalle completo en <code>data-model.md</code>.
 </footer>
 
 <script type="module">

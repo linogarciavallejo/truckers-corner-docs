@@ -203,8 +203,8 @@
   "meta": {
     "title": "Truckers Corner — Explorador de Flujos de Trabajo",
     "subtitle": "Visión de negocio + diagramas de secuencia animados del dominio Carrier ↔ Broker.",
-    "version": "0.2",
-    "notes": "Fuente canónica. index.html embebe una copia para funcionar offline (doble clic). Si editas aquí, sincroniza la copia embebida en index.html."
+    "version": "0.3",
+    "notes": "Fuente canónica. index.html embebe una copia para funcionar offline (doble clic). Si editas aquí, sincroniza la copia embebida en index.html. v0.3: alineado con los 15 documentos de proceso del análisis (docs/Analysis) — capacidad FTL/LTL en posting, pre-pickup tracking, evidencias y accesoriales, y nuevo flujo 8 (Cierre de carga)."
   },
   "business": {
     "name": "Truckers Corner",
@@ -272,14 +272,14 @@
       "id": "posting",
       "name": "2 · Posting (Disponibilidad)",
       "icon": "🚚",
-      "summary": "El carrier publica la disponibilidad de un camión: fecha, ubicación, lanes preferidas, tipo de equipo y rate mínimo por milla. Es la dirección correcta del flujo — el carrier ofrece capacidad, no el shipper publica carga.",
+      "summary": "El carrier publica la disponibilidad de un camión: fecha, ubicación, lanes preferidas, tipo de equipo, capacidad (pallets/peso, FTL/LTL), restricciones operativas (refrigeración, securement) y rate mínimo por milla. Es la dirección correcta del flujo — el carrier ofrece capacidad, no el shipper publica carga.",
       "goal": "Convertir capacidad ociosa (un camión disponible) en oportunidad de negocio, publicándola con criterios claros para alimentar el matching.",
       "value": "Mejor utilización de la flota y menos deadhead (millas vacías): cada camión disponible se vuelve buscable.",
       "pain": "Hoy la disponibilidad vive en la cabeza del dispatcher y se gestiona ad-hoc, sin criterios sistematizados.",
       "kpis": ["Utilización del camión (%)", "Deadhead (% millas vacías)", "Tiempo hasta la primera oferta relevante"],
       "participants": ["dispatcher", "web", "api", "db"],
       "steps": [
-        { "from": "dispatcher", "to": "web", "action": "Captura disponibilidad", "data": "{ truckId, date, location, lanes[], equipmentType, minRatePerMile }", "desc": "El dispatcher indica qué camión está disponible, desde dónde, hacia qué lanes (cities/states), con qué equipo (dry van, reefer, flatbed) y el rate mínimo aceptable." },
+        { "from": "dispatcher", "to": "web", "action": "Captura disponibilidad", "data": "{ truckId, date, location, lanes[], equipmentType, capacity{ pallets, weight }, loadType: FTL|LTL, reefer{ minTemp, maxTemp }?, securement[], specialInstructions?, minRatePerMile }", "desc": "El dispatcher indica qué camión está disponible, desde dónde, hacia qué lanes (cities/states), con qué equipo (dry van, reefer, flatbed), qué capacidad ofrece (pallets/peso y si admite cargas parciales), restricciones operativas (temperatura, securement: chains/straps/tarps) y el rate mínimo aceptable.", "concept": { "title": "FTL vs LTL — la base de la multi-carga", "body": "FTL (Full Truck Load) = el camión va completo con una sola carga, no admite más. LTL (Less Than Truck Load) = quedan pallets disponibles y el dispatcher puede combinar varias cargas en un mismo viaje (multi-carga manual). La capacidad publicada es lo que hace posible ese combinado." } },
         { "from": "web", "to": "api", "action": "POST /availability", "data": "{ availability, tenantId }", "desc": "Se envía al backend la oferta de capacidad." },
         { "from": "api", "to": "db", "action": "Verifica compliance del equipo", "data": "check(truck, driver).complianceState", "desc": "Antes de publicar, el backend valida que el camión y su driver no estén Blocked.", "concept": { "title": "El compliance se chequea aquí", "body": "Un camión con registration vencida o un driver con CDL vencida no puede publicarse. El gate de compliance del Flujo 1 se aplica en cada punto operacional." } },
         { "from": "api", "to": "api", "action": "Valida business rules", "data": "rate >= threshold, location válida", "desc": "Reglas de negocio: umbrales de rate, formato de ubicación, lanes válidas.", "self": true },
@@ -355,9 +355,9 @@
     },
     {
       "id": "execution",
-      "name": "6 · Ejecución (Pickup → Transit → Delivery)",
+      "name": "6 · Ejecución (Pre-Pickup → Pickup → Transit → Delivery)",
       "icon": "🛰️",
-      "summary": "El driver ejecuta la carga: check-in y captura de BOL en pickup, tracking de ubicación en tiempo real durante el transit, y check-in con captura de POD firmado en delivery. Se detectan detenciones y se registran daños.",
+      "summary": "El driver ejecuta la carga: tracking desde el acknowledgment (pre-pickup, con ETA y alertas), check-in con geofence y captura de BOL en pickup, tracking en tiempo real durante el transit, y check-in con captura de POD firmado en delivery. Se detectan detenciones (en pickup y delivery, con evidencia) y se registran excepciones (daños, faltantes, sobrantes, rechazos).",
       "goal": "Ejecutar la carga con visibilidad en vivo y documentación completa, para garantizar el pago y detectar cargos cobrables (detención).",
       "value": "Visibilidad al broker, evidencia íntegra (BOL/POD) que asegura el cobro, y detección automática de detención que de otro modo se pierde.",
       "pain": "Hoy el rastreo es por llamadas, el papeleo se traspapela, y la detención cobrable muchas veces no se documenta a tiempo.",
@@ -365,16 +365,18 @@
       "participants": ["jobs", "push", "driver", "mobile", "api", "signalr", "web", "db", "broker"],
       "steps": [
         { "from": "jobs", "to": "push", "action": "[24h y 3h antes] Confirmaciones", "data": "{ dispatchId, reminder }", "desc": "Jobs programados envían recordatorios pre-pickup, como exige la operación.", "concept": { "title": "Confirmaciones temporales", "body": "El proceso real exige avisos 24h y 3h antes del pickup, y 24h antes del delivery. Son scheduled jobs (Hangfire), no acciones manuales." } },
-        { "from": "driver", "to": "mobile", "action": "Check-in en pickup", "data": "{ location, timestamp }", "desc": "El driver llega al origen y hace check-in desde la app." },
-        { "from": "mobile", "to": "api", "action": "POST /dispatch/{id}/checkin", "data": "{ location, ts, phase: Pickup }", "desc": "Se registra la llegada e inicia el timer de carga." },
-        { "from": "driver", "to": "mobile", "action": "Captura BOL", "data": "📷 BOL.jpg", "desc": "El driver fotografía/escanea el Bill of Lading al cargar.", "concept": { "title": "BOL vs POD", "body": "El BOL se captura al CARGAR (pickup). El POD firmado se captura al ENTREGAR (delivery). Son documentos distintos en momentos distintos." } },
-        { "from": "api", "to": "broker", "action": "[Si >2h] Notifica detención", "data": "{ detentionStart, rate: $40/h }", "desc": "Si la carga supera 2h, se detecta detención y se notifica al broker (posible cargo adicional).", "concept": { "title": "Detención >2h", "body": "Regla de negocio recurrente en las rate confs reales: la detención empieza a acumular 2h después del appointment, típicamente $40/h con tope (~$200/stop). Debe notificarse al broker dentro de plazo." } },
-        { "from": "mobile", "to": "api", "action": "Inicia tracking (background)", "data": "stream{ lat, lng, ts } cada ~30s", "desc": "Durante el transit, la app envía la ubicación periódicamente, incluso en background.", "concept": { "title": "Tracking confiable", "body": "Las rate confs penalizan apagar el tracking (ej. -$250 / -$100). React Native con ubicación en background cubre este requisito; es la razón por la que la app móvil es crítica." } },
+        { "from": "mobile", "to": "api", "action": "Tracking pre-pickup (desde el acknowledgment)", "data": "stream{ lat, lng, ts } → ETA al pickup", "desc": "El tracking arranca cuando el driver confirma el dispatch, NO cuando llega al pickup. El sistema calcula la ETA contra el appointment y la recalcula con cada actualización.", "concept": { "title": "Pre-pickup tracking", "body": "Riesgo operacional real (Proceso 05 del análisis): el driver puede no estar en el punto de pickup cuando se toma la carga. Monitorear su avance ANTES del pickup permite detectar a tiempo una llegada tarde — antes de que sea una falla de servicio con el broker." } },
+        { "from": "api", "to": "web", "action": "Alertas pre-pickup", "data": "{ eta, status: OnTrack | LateRisk | NoMovement }", "desc": "Si la ETA supera el appointment o el driver lleva demasiado tiempo sin moverse, el dispatcher recibe la alerta y puede actuar (avisar al broker, reasignar)." },
+        { "from": "driver", "to": "mobile", "action": "Check-in en pickup (geofence)", "data": "{ location, timestamp, dock#, appointment# }", "desc": "La llegada se detecta por geofence (radio configurable) y el driver confirma el check-in con los datos del shipper (dock, appointment)." },
+        { "from": "mobile", "to": "api", "action": "POST /dispatch/{id}/checkin", "data": "{ location, ts, phase: Pickup }", "desc": "Se registra la llegada e inicia el timer de carga (y de detención)." },
+        { "from": "driver", "to": "mobile", "action": "Captura BOL + documentos de carga", "data": "📷 BOL.jpg + { sealNumber, weightTicket?, scaleTicket? }", "desc": "El driver fotografía/escanea el Bill of Lading al cargar, registra el número de sello del trailer y adjunta weight/scale tickets si aplican.", "concept": { "title": "BOL vs POD", "body": "El BOL se captura al CARGAR (pickup). El POD firmado se captura al ENTREGAR (delivery). Son documentos distintos en momentos distintos. El seal number registrado al cargar se verifica al entregar (integridad de la carga)." } },
+        { "from": "api", "to": "broker", "action": "[Si >2h] Notifica detención + evidencia", "data": "{ detentionStart, rate: $40/h, evidence: timestamps+GPS+fotos }", "desc": "Si la carga/descarga supera 2h, se detecta detención y se notifica al broker con la evidencia. Aplica igual en pickup y en delivery.", "concept": { "title": "Detención >2h, con evidencia", "body": "Regla recurrente en las rate confs reales: la detención acumula 2h después del appointment, típicamente $40/h con tope (~$200/stop). La evidencia (timestamps de check-in, GPS, dock, fotos) es lo que hace cobrable el cargo — hoy muchas detenciones se pierden por no documentarse a tiempo." } },
+        { "from": "mobile", "to": "api", "action": "Tracking en transit (background)", "data": "stream{ lat, lng, ts } cada ~30s + driverStatus", "desc": "Durante el transit, la app envía la ubicación periódicamente, incluso en background. El driver puede reportar estados (fuel stop, rest break, traffic delay, mechanical issue) que quedan en el historial de la carga.", "concept": { "title": "Tracking confiable", "body": "Las rate confs penalizan apagar el tracking (ej. -$250 / -$100). React Native con ubicación en background cubre este requisito; es la razón por la que la app móvil es crítica." } },
         { "from": "api", "to": "signalr", "action": "Difunde ubicación", "data": "{ dispatchId, position }", "desc": "El backend retransmite la posición en tiempo real." },
         { "from": "signalr", "to": "web", "action": "Posición en vivo", "data": "{ position }", "desc": "El dispatcher (y, vía visibilidad, el broker) ve el camión moverse en el mapa." },
         { "from": "driver", "to": "mobile", "action": "Check-in en delivery", "data": "{ location, ts, phase: Delivery }", "desc": "El driver llega al destino y hace check-in." },
-        { "from": "driver", "to": "mobile", "action": "Captura POD firmado + daños", "data": "📷 POD.jpg, { damages?, shortages? }", "desc": "El driver captura el Proof of Delivery firmado y registra daños o faltantes si los hay." },
-        { "from": "mobile", "to": "api", "action": "Sube POD + incidentes", "data": "{ pod, incidentReport? }", "desc": "Se suben los documentos y, si aplica, un reporte de incidente." },
+        { "from": "driver", "to": "mobile", "action": "Captura POD firmado + excepciones", "data": "📷 POD.jpg, { damages?, shortages?, overages?, refused? }", "desc": "El driver captura el Proof of Delivery firmado, verifica cantidades contra lo planificado y registra excepciones: daños, faltantes (shortage), sobrantes (overage) o carga rechazada — cada una con su evidencia fotográfica.", "concept": { "title": "Excepciones de entrega", "body": "Planificado vs entregado: 18 pallets asignados y 16 entregados = shortage; 20 = overage. Documentar la excepción con evidencia en el momento protege al carrier ante un claim y determina si el billing puede proceder." } },
+        { "from": "mobile", "to": "api", "action": "Sube POD + excepciones", "data": "{ pod, incidentReports[] }", "desc": "Se suben los documentos y, si aplica, los reportes de excepción (la entrega no se cierra con excepciones críticas sin documentar)." },
         { "from": "api", "to": "db", "action": "Dispatch = Delivered", "data": "{ status: Delivered, pod, bol }", "desc": "La entrega queda registrada con sus documentos; listo para facturar." }
       ]
     },
@@ -382,21 +384,41 @@
       "id": "billing",
       "name": "7 · Billing & Comisión",
       "icon": "💵",
-      "summary": "Se genera el invoice con Rate Confirmation y POD adjuntos, se envía al broker, y la plataforma cobra su comisión (% por carrier-broker, sobre el total + accesoriales) a la tarjeta del carrier vía Stripe.",
+      "summary": "Se consolidan los accesoriales del viaje con su evidencia (detención, lumper), se genera el invoice con Rate Confirmation y POD adjuntos, se envía al broker, y la plataforma cobra su comisión (% por carrier-broker, sobre el total + accesoriales) a la tarjeta del carrier vía Stripe.",
       "goal": "Cerrar el ciclo financiero: facturar al broker con la documentación requerida y cobrar la comisión de la plataforma al carrier, automáticamente.",
       "value": "Ingreso recurrente para la plataforma sin fricción de cobro, y un cierre de operación limpio y auditable.",
       "pain": "Hoy la facturación y el cálculo de comisión se hacen a mano; el cobro depende de seguimiento manual.",
       "kpis": ["Días desde entrega hasta cobro", "Comisión cobrada vs. devengada", "Rentabilidad por carrier"],
       "participants": ["api", "db", "broker", "email", "stripe", "dispatcher", "web"],
       "steps": [
-        { "from": "api", "to": "db", "action": "Genera Invoice", "data": "{ invoice, attach: [rateConf, pod] }", "desc": "Al completarse la entrega, se genera el invoice con la rate conf y el POD adjuntos (requisito de pago de todos los brokers)." },
+        { "from": "api", "to": "db", "action": "Consolida accesoriales + evidencia", "data": "{ detentionEvents[], lumper[], evidence[], status: PendingApproval }", "desc": "Los cargos accesoriales del viaje (detención en pickup/delivery, lumper fees, equipo) se consolidan con su evidencia. La aprobación del broker se gestiona por email (broker externo en v1) y el dispatcher registra el resultado.", "concept": { "title": "Accesorial sin evidencia = accesorial perdido", "body": "El broker solo aprueba cargos respaldados: timestamps, GPS, fotos, recibos. El sistema arma el paquete de evidencia automáticamente desde la ejecución (Flujo 6), en lugar de reconstruirlo a mano días después." } },
+        { "from": "api", "to": "db", "action": "Genera Invoice", "data": "{ invoice, attach: [rateConf, pod, accessorials+evidence] }", "desc": "Al completarse la entrega, se genera el invoice con la rate conf, el POD y los accesoriales aprobados adjuntos (requisito de pago de todos los brokers)." },
         { "from": "api", "to": "email", "action": "Envía invoice al broker", "data": "{ to: broker.ap, invoice, pod, rateConf }", "desc": "El invoice se manda al área de cuentas por pagar del broker." },
         { "from": "broker", "to": "api", "action": "Confirma recepción", "data": "{ received: true }", "desc": "Se registra la confirmación (o se marca manual). El broker pagará el flete al carrier directamente.", "concept": { "title": "Dos flujos financieros distintos", "body": "(1) Broker → Carrier: paga el flete, FUERA de la plataforma (se registra). (2) Carrier → Plataforma: paga la comisión, DENTRO de la plataforma vía Stripe. No se mezclan." } },
         { "from": "api", "to": "api", "action": "Calcula comisión", "data": "commission = %(carrier,broker) × (total + accesoriales)", "desc": "El % varía por relación carrier-broker (negociable por load en excepciones) y se aplica sobre el rate total incluyendo accesoriales como detención o daños.", "self": true, "concept": { "title": "Comisión variable", "body": "No es un % fijo global: se configura por par carrier-broker. Y la base incluye los cargos que surgieron en el proceso (espera, daños), no solo el line haul." } },
         { "from": "api", "to": "stripe", "action": "Cobra a tarjeta del carrier", "data": "{ customerId, amount: commission }", "desc": "Cargo directo a la tarjeta de crédito del carrier (no batch, no factoring en v1).", "concept": { "title": "Cargo directo, no factoring", "body": "El cliente confirmó: cargo directo a tarjeta. Factoring/quick-pay queda para una fase futura si el negocio crece." } },
         { "from": "stripe", "to": "api", "action": "Confirmación de cargo", "data": "{ chargeId, status: succeeded }", "desc": "Stripe confirma el cobro (2.9% + $0.30 por transacción)." },
-        { "from": "api", "to": "db", "action": "Order = Closed", "data": "{ commissionCharge, status: Closed }", "desc": "Se registra el cargo de comisión y se cierra la orden." },
+        { "from": "api", "to": "db", "action": "Billing completo", "data": "{ commissionCharge, billingStatus: Complete }", "desc": "Se registra el cargo de comisión. La orden queda lista para el cierre formal (Flujo 8)." },
         { "from": "api", "to": "web", "action": "Reportes (Master Web)", "data": "{ commissions, carrierProfitability, history }", "desc": "El dashboard maestro muestra comisiones, rentabilidad por carrier, órdenes en tránsito, confirmaciones pendientes e históricos." }
+      ]
+    },
+    {
+      "id": "closure",
+      "name": "8 · Cierre de carga (Load Closure)",
+      "icon": "🗄️",
+      "summary": "El cierre formal del ciclo: se valida que la carga esté completa en lo operacional, documental y financiero, se resuelven las excepciones pendientes, y la orden se bloquea y archiva como registro inmutable que alimenta los históricos y reportes.",
+      "goal": "Garantizar que ninguna carga quede 'a medias' — todo documento presente, todo cargo conciliado, toda excepción resuelta — antes de archivarla como historia auditable.",
+      "value": "Calidad operacional medible y un archivo histórico íntegro: la base de los reportes de rentabilidad, del soporte ante claims y de las auditorías.",
+      "pain": "Hoy las cargas 'se terminan' cuando se cobra, pero el papeleo queda disperso; ante un claim o disputa meses después, reconstruir la evidencia es costoso o imposible.",
+      "kpis": ["% de cargas cerradas sin pendientes", "Tiempo entrega → cierre", "Antigüedad de cargas abiertas (aging)"],
+      "participants": ["jobs", "api", "db", "dispatcher", "web"],
+      "steps": [
+        { "from": "jobs", "to": "api", "action": "Detecta cargas listas para cierre", "data": "scan(orders, billingStatus: Complete)", "desc": "Un job recurrente identifica órdenes con billing completo y dispara la validación de cierre." },
+        { "from": "api", "to": "db", "action": "Valida checklist de cierre", "data": "{ rateConf✓, bol✓, pod✓, invoice✓, accesoriales✓, excepciones✓ }", "desc": "Se verifica que estén presentes todos los documentos obligatorios, que el billing esté conciliado y que no haya excepciones críticas abiertas.", "concept": { "title": "Cierre formal (Proceso 10 del análisis)", "body": "La carga no se cierra con la entrega ni con el cobro: se cierra cuando TODO está completo y conciliado. Regla de negocio: las excepciones críticas (claims, faltantes) deben resolverse antes del cierre." } },
+        { "from": "dispatcher", "to": "web", "action": "Resuelve excepciones pendientes", "data": "{ incidentId, resolution, notes }", "desc": "Si el checklist falla, el dispatcher resuelve lo pendiente: registra la resolución del claim, consigue el documento faltante, o concilia el cargo en disputa." },
+        { "from": "api", "to": "db", "action": "Cierra y bloquea la orden", "data": "{ status: Closed, lockedAt }", "desc": "La orden se marca como cerrada y sus registros pasan a solo-lectura; documentos y comunicaciones quedan archivados juntos.", "concept": { "title": "Inmutabilidad", "body": "Tras el cierre, los registros de la carga no se modifican — son la evidencia ante auditorías, claims y disputas. Cualquier corrección posterior se registra como ajuste nuevo, nunca editando la historia." } },
+        { "from": "api", "to": "db", "action": "Calcula KPIs del viaje", "data": "{ onTimePickup, onTimeDelivery, detention$, profit, commission }", "desc": "Con la carga cerrada se calculan sus métricas definitivas, que alimentan los reportes e históricos del Master Web." },
+        { "from": "api", "to": "web", "action": "Históricos actualizados", "data": "{ kpis, archive }", "desc": "El Master Web refleja la carga cerrada: rentabilidad por carrier/broker, detención recuperada, desempeño por driver." }
       ]
     }
   ],
@@ -411,13 +433,17 @@
     { "term": "Detención (Detention)", "def": "Tiempo de espera del camión en pickup/delivery más allá de un umbral (típico 2h). Genera cargo (~$40/h con tope)." },
     { "term": "Lane", "def": "Ruta o corredor origen→destino que un carrier prefiere operar (ej. CA→TX)." },
     { "term": "Reefer / Dry Van / Flatbed", "def": "Tipos de equipo: refrigerado / caja seca / plataforma. Cada uno con su compliance y características." },
+    { "term": "FTL / LTL", "def": "Full Truck Load (el camión va completo con una sola carga) vs Less Than Truck Load (carga parcial; deja capacidad libre y permite combinar varias cargas en un mismo viaje — la base de la multi-carga manual)." },
+    { "term": "Shipper / Consignee", "def": "Origen (quien embarca la carga) y destino (quien la recibe). El driver hace check-in en las instalaciones de ambos; la detención puede ocurrir en cualquiera de los dos." },
+    { "term": "Seal (sello)", "def": "Sello numerado que cierra el trailer al terminar la carga. Su número se registra en el pickup y se verifica en el delivery — evidencia de integridad de la carga." },
+    { "term": "Lumper fee", "def": "Cargo por personal de carga/descarga en el dock del shipper/consignee. Reembolsable como accesorial si se documenta con recibo." },
+    { "term": "Shortage / Overage", "def": "Faltante o sobrante: diferencia entre lo planificado y lo realmente entregado (ej. 18 pallets asignados, 16 entregados). Se documenta como excepción con evidencia en el delivery." },
     { "term": "DAT Load Board", "def": "El mayor marketplace de cargas de EE.UU. Fuente principal de loads; acceso vía API oficial." },
     { "term": "TONU (Truck Order Not Used)", "def": "Cargo cuando se ordena un camión y luego se cancela la carga (~$200)." },
     { "term": "FMCSA SAFER", "def": "Sistema federal para verificar autoridad, seguros y safety rating de carriers/brokers. API gratuita." },
     { "term": "Multi-tenant / SaaS", "def": "Arquitectura donde múltiples clientes (tenants) usan la misma plataforma con datos aislados. Diferida a Fase 2 con scaffolding desde v1." }
   ]
 }
-
 </script>
 
 <script>

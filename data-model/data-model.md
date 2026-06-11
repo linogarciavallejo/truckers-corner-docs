@@ -1,8 +1,8 @@
-# Truckers Corner — Modelo de Datos Lógico (v0.1)
+# Truckers Corner — Modelo de Datos Lógico (v0.2)
 
 > Modelo **lógico** (entidades, atributos, relaciones, cardinalidad) con hints ligeros de implementación (PK/FK, índices). Mapea limpio a EF Core / PostgreSQL en la fase física. Notación: **Mermaid ERD (crow's foot)** + diccionario.
 >
-> Fuentes: checklist del schema heredado + 6 Rate Confirmations reales + PDFs de proceso + decisiones cerradas (dispatcher, single-tenant v1 con scaffolding `TenantId`, DAT API, firma barata).
+> Fuentes: checklist del schema heredado + 6 Rate Confirmations reales + PDFs de proceso + **15 documentos de proceso del análisis (`docs/Analysis`)** + decisiones cerradas (dispatcher, single-tenant v1 con scaffolding `TenantId`, DAT API, firma barata).
 >
 > **Provenance:** 🔵 heredado (keeper) · 🟢 nuevo (rate confs/proceso) · ⚪ estándar/infra
 
@@ -103,7 +103,7 @@ erDiagram
     bigint id PK
     string owner_type "Broker|Carrier|Driver|Truck|Trailer"
     bigint owner_id
-    string doc_type "Authority|W9|Bond|COI|CARB|CDL|Registration"
+    string doc_type "Authority|W9|Bond|COI|CARB|CDL|Registration|MedicalCard|Inspection|Permit|HazmatCert|TWIC"
     bigint media_id FK
     date expiration_date
     int status "Valid|Expired|PendingReview"
@@ -149,6 +149,14 @@ erDiagram
     string current_location
     string preferred_lanes
     int equipment_type
+    int load_type "FTL|LTL"
+    int total_pallets
+    int available_pallets
+    decimal weight_capacity
+    int reefer_min_temp
+    int reefer_max_temp
+    string securement "Chains|Straps|Tarps|Bars"
+    text special_instructions
     decimal min_rate_per_mile
     int status "Published|Matched|Expired"
   }
@@ -160,6 +168,7 @@ erDiagram
     string pro_number
     string commodity
     decimal total_weight
+    int pallet_count
     decimal total_miles
     int equipment_type
     int reefer_min_temp
@@ -253,6 +262,7 @@ erDiagram
     decimal rate
     decimal commission_amount
     datetime closed_at
+    datetime locked_at
   }
   DISPATCH {
     bigint id PK
@@ -260,7 +270,8 @@ erDiagram
     bigint truck_id FK
     bigint trailer_id FK
     text instructions
-    int status "Generated|Acknowledged|AtPickup|InTransit|AtDelivery|Delivered"
+    int status "Generated|Acknowledged|EnRouteToPickup|AtPickup|InTransit|AtDelivery|Delivered"
+    datetime current_eta
     datetime acknowledged_at
   }
   LOCATION_UPDATE {
@@ -284,18 +295,21 @@ erDiagram
   TRIP_DOCUMENT {
     bigint id PK
     bigint dispatch_id FK
-    string doc_type "BOL|POD"
+    string doc_type "BOL|POD|WeightTicket|ScaleTicket|LumperReceipt|TemperatureLog|Photo"
     bigint media_id FK
+    string seal_number
     datetime captured_at
     string signature_data
   }
   INCIDENT_REPORT {
     bigint id PK
     bigint dispatch_id FK
-    string type "Damage|Shortage|Other"
+    string type "Damage|Shortage|Overage|Refused|TemperatureViolation|Other"
     text description
     datetime reported_at
-    int status
+    int status "Open|UnderReview|Resolved|Closed"
+    text resolution
+    datetime resolved_at
   }
 ```
 
@@ -305,11 +319,22 @@ erDiagram
 
 ```mermaid
 erDiagram
+  ORDER ||--o{ ACCESSORIAL_CHARGE : "incurre"
   ORDER ||--|| INVOICE : "factura"
   ORDER ||--|| COMMISSION_CHARGE : "cobra"
   CARRIER ||--o{ COMMISSION_CHARGE : "paga"
   CARRIER_PAYMENT_METHOD ||--o{ COMMISSION_CHARGE : "usa"
 
+  ACCESSORIAL_CHARGE {
+    bigint id PK
+    bigint order_id FK
+    bigint detention_event_id FK
+    string type "Detention|Lumper|Equipment|SpecialHandling|ExtraMiles"
+    decimal amount
+    string evidence_media_ids
+    int status "Pending|Approved|Rejected"
+    datetime approved_at
+  }
   INVOICE {
     bigint id PK
     bigint tenant_id FK
@@ -357,15 +382,15 @@ erDiagram
 | **TRUCK** | id, carrier_id, truck_type, make, model, vin, license_plate, unit_number, weight, length, registration_expiry_date, register_owner, ifta_state_number, compliance_state | 🔵 | **1 Carrier → N Trucks.** Conserva VIN/IFTA/unit#. Enum de tipo ampliado. |
 | **TRAILER** | id, carrier_id, trailer_number, vin, trailer_type, registration_expiry_date, length, compliance_state | 🟢 | **Entidad nueva** — el schema viejo no la tenía; las rate confs la referencian aparte. |
 | **INSURANCE_POLICY** | id, carrier_id, agent_name/address/phone/email, general_liability_start/end, cargo_liability_start/end, scheduled_autos, scheduled_autos_details | 🔵 | Conserva ventanas de GL y Cargo Liability. |
-| **COMPLIANCE_DOCUMENT** | id, owner_type, owner_id, doc_type, media_id, issue_date, expiration_date, status, verified_at | 🔵→🟢 | **Polimórfico.** Generaliza el paquete de 6 docs; habilita monitoreo + auto-bloqueo. |
+| **COMPLIANCE_DOCUMENT** | id, owner_type, owner_id, doc_type, media_id, issue_date, expiration_date, status, verified_at | 🔵→🟢 | **Polimórfico.** Generaliza el paquete de 6 docs; habilita monitoreo + auto-bloqueo. Tipos ampliados (análisis): medical card, inspecciones, permisos, hazmat cert, TWIC. Ventanas de alerta **configurables** (30/15/10/7 días). |
 | **CARRIER_BROKER_TERMS** | id, carrier_id, broker_id, commission_pct | 🟢 | **Comisión variable por par** (reemplaza el 3% fijo). Excepción negociable por load en el RateConfirmation. |
 | **CARRIER_PAYMENT_METHOD** | id, carrier_id, stripe_customer_id, type, last4, brand, is_default | 🟢 | Para el cargo de comisión a tarjeta (Stripe). |
 
 ### Disponibilidad / Loads / Booking
 | Entidad | Atributos clave | Provenance | Notas |
 |---|---|---|---|
-| **TRUCK_AVAILABILITY** | id, tenant_id, truck_id, driver_id?, available_date, current_location, preferred_lanes, equipment_type, min_rate_per_mile, status | 🟢 | El carrier publica capacidad (dirección correcta del flujo). |
-| **LOAD** | id, tenant_id, broker_id, source, pro_number, commodity, total_weight, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status | 🔵→🟢 | Separado del Order. `commodity` (antes "products"). Campos reefer/hazmat/exclusive nuevos. |
+| **TRUCK_AVAILABILITY** | id, tenant_id, truck_id, driver_id?, available_date, current_location, preferred_lanes, equipment_type, **load_type (FTL\|LTL), total_pallets, available_pallets, weight_capacity, reefer_min/max_temp, securement, special_instructions**, min_rate_per_mile, status | 🟢 | El carrier publica capacidad (dirección correcta del flujo). **Capacidad explícita** (Proceso 01): FTL = no admite más cargas; LTL = capacidad restante disponible para combinar (multi-carga manual). |
+| **LOAD** | id, tenant_id, broker_id, source, pro_number, commodity, total_weight, **pallet_count**, total_miles, equipment_type, reefer_min_temp, reefer_max_temp, hazmat, exclusive_use, rate_total, status | 🔵→🟢 | Separado del Order. `commodity` (antes "products"). Campos reefer/hazmat/exclusive nuevos. `pallet_count` permite validar capacidad asignada vs cargada. |
 | **LOAD_STOP** | id, load_id, sequence, stop_type, company_name, address, lat, lng, appointment_start/end, scheduling, reference_number, po_number, bol_number, weight, contact_name, contact_phone, instructions | 🟢 | **Multi-stop** (N pickups + N deliveries). El viejo solo tenía 1+1. |
 | **OFFER** | id, availability_id, load_id, score, rank, rate, status | 🟢 | Resultado del matching (ranking). |
 | **AVAILABILITY_BROADCAST** | id, availability_id, broker_id, sent_at, status | 🟢 | **Broadcast a brokers** — por cada broker al que se difunde por email la disponibilidad/oportunidad. Las respuestas (rate confs) entran al OCR. |
@@ -375,17 +400,18 @@ erDiagram
 ### Order / Dispatch / Ejecución
 | Entidad | Atributos clave | Provenance | Notas |
 |---|---|---|---|
-| **ORDER** | id, tenant_id, carrier_id, rate_confirmation_id, **dispatch_id**, status, rate, commission_amount, created_at, closed_at | 🟢 | **FK explícita a Carrier**. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → **multi-carga manual**). |
-| **DISPATCH** (viaje del camión) | id, driver_id, truck_id, trailer_id, instructions, status, acknowledged_at | 🟢 | El **viaje de un camión**; **agrupa 1..N Orders (multi-carga manual)** — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio. |
+| **ORDER** | id, tenant_id, carrier_id, rate_confirmation_id, **dispatch_id**, status, rate, commission_amount, created_at, closed_at, **locked_at** | 🟢 | **FK explícita a Carrier**. Pertenece a un Dispatch (un Dispatch agrupa 1..N Orders → **multi-carga manual**). **Cierre formal** (Proceso 10): checklist (BOL+POD+invoice+excepciones resueltas) → `locked_at` → registros inmutables. |
+| **DISPATCH** (viaje del camión) | id, driver_id, truck_id, trailer_id, instructions, status, **current_eta**, acknowledged_at | 🟢 | El **viaje de un camión**; **agrupa 1..N Orders (multi-carga manual)** — el dispatcher asigna y secuencia los stops combinados a mano. Asigna driver + truck + trailer. Acknowledgment obligatorio. Estado **EnRouteToPickup** (Proceso 05): el tracking arranca al acknowledgment, con ETA recalculada y llegada por geofence. |
 | **LOCATION_UPDATE** | id, dispatch_id, lat, lng, recorded_at, speed, heading | 🟢 | Tracking; particionar por fecha (crece rápido). |
 | **DETENTION_EVENT** | id, dispatch_id, stop_id, type, started_at, ended_at, duration_minutes, rate_per_hour, amount, charge_applied | 🟢 | Detención >2h; alimenta accesoriales/comisión. |
-| **TRIP_DOCUMENT** | id, dispatch_id, doc_type, media_id, captured_at, captured_by, signature_data | 🟢 | **BOL** (pickup) y **POD** (delivery) — documentos distintos. |
-| **INCIDENT_REPORT** | id, dispatch_id, type, description, media_ids, reported_at, status | 🟢 | Daños/faltantes. |
+| **TRIP_DOCUMENT** | id, dispatch_id, doc_type, media_id, **seal_number**, captured_at, captured_by, signature_data | 🟢 | **BOL** (pickup) y **POD** (delivery) — documentos distintos. Tipos ampliados (Procesos 06/08/13): weight/scale tickets, lumper receipts, temperature logs, fotos. Seal registrado al cargar y verificado al entregar. |
+| **INCIDENT_REPORT** | id, dispatch_id, type, description, media_ids, reported_at, status, **resolution, resolved_at** | 🟢 | Excepciones de ejecución (Proceso 08): daños, faltantes (shortage), **sobrantes (overage), rechazos (refused), violación de temperatura**. Las críticas deben resolverse antes del cierre de la orden. |
 
 ### Billing
 | Entidad | Atributos clave | Provenance | Notas |
 |---|---|---|---|
-| **INVOICE** | id, tenant_id, order_id, number, amount, status, pdf_media_id, sent_at, received_at | 🔵→🟢 | Invoice al broker con RateConf + POD adjuntos. |
+| **ACCESSORIAL_CHARGE** | id, order_id, detention_event_id?, type, amount, evidence_media_ids, status, approved_at | 🟢 | **Cargo accesorial incurrido** (Proceso 09): detención, lumper, equipo, manejo especial, millas extra. Con **evidencia** adjunta y estado de aprobación del broker (gestionada por email en v1; el dispatcher registra el resultado). Distinto de `RATE_CONF_ACCESSORIAL` (términos pactados en el contrato). |
+| **INVOICE** | id, tenant_id, order_id, number, amount, status, pdf_media_id, sent_at, received_at | 🔵→🟢 | Invoice al broker con RateConf + POD + **accesoriales aprobados (con evidencia)** adjuntos. |
 | **COMMISSION_CHARGE** | id, order_id, carrier_id, payment_method_id, percentage, base_amount, amount, stripe_charge_id, status, charged_at | 🟢 | Comisión cobrada al **carrier** vía Stripe. Base = total + accesoriales. |
 
 ---
@@ -395,7 +421,11 @@ erDiagram
 - **Cardinalidad raíz:** `Tenant → Carrier → {Driver, Truck, Trailer}` (todo 1:N). Corrige el 1:1-desde-User del schema heredado. Los varios carriers que coordina el cliente (Nelson, P Munoz, SPH, LRVS) son **N Carriers dentro de 1 Tenant** — no requieren multi-tenant en v1.
 - **Cadena contractual→operacional:** `Load → RateConfirmation (1:0..1) → Order`; un **Dispatch (viaje del camión) agrupa 1..N Orders** (**multi-carga manual** — el dispatcher combina y secuencia los stops a mano). Entidades separadas (no fusionadas como el viejo `freight_jobs`).
 - **Broadcast a brokers:** al publicar una `TruckAvailability` se envía la oportunidad por email a los brokers del catálogo (`AvailabilityBroadcast` por broker); las respuestas (rate confs) entran al flujo de OCR.
-- **Compliance transversal:** `ComplianceDocument` polimórfico + estado `compliance_state` en Broker/Carrier/Driver/Truck/Trailer. Job diario evalúa expiraciones, alerta 10 días antes, y bloquea en cascada (un Driver/Truck Blocked no es asignable a Dispatch).
+- **Compliance transversal:** `ComplianceDocument` polimórfico + estado `compliance_state` en Broker/Carrier/Driver/Truck/Trailer. Job diario evalúa expiraciones, alerta con **ventanas configurables** (p. ej. 30/15/10/7 días), y bloquea en cascada (un Driver/Truck Blocked no es asignable a Dispatch).
+- **Regla FTL/LTL (multi-carga):** un Dispatch cuya carga es **FTL** no admite más Orders; con **LTL**, la capacidad restante (`available_pallets`) permite al dispatcher **combinar más cargas manualmente** en el mismo viaje. La validación asignado-vs-cargado usa `LOAD.pallet_count` contra la capacidad del equipo.
+- **Pre-pickup tracking:** el tracking inicia en el **acknowledgment** (estado `EnRouteToPickup`), no en el pickup. `current_eta` se recalcula con cada `LocationUpdate`; la llegada se detecta por geofence. Alertas: riesgo de llegada tarde y driver sin movimiento.
+- **Accesoriales con evidencia:** `DetentionEvent` (pickup y delivery) genera un `AccessorialCharge` con su evidencia (timestamps + GPS + fotos + recibos); la aprobación del broker viaja por email en v1 y se registra. Los aprobados se anexan al Invoice y entran a la base de la comisión.
+- **Cierre formal (Load Closure):** una Order se cierra solo cuando pasa el checklist (RateConf + BOL + POD + invoice + accesoriales conciliados + excepciones críticas resueltas). Tras `locked_at`, los registros del viaje son **inmutables** (auditoría/claims); correcciones posteriores = ajustes nuevos, nunca edición de la historia.
 - **Multi-tenancy (Fase 2):** `TenantId` ya está en todas las entidades de cabecera (scaffolding). La productización (onboarding de tenants, billing por tenant) se agrega después sin refactor.
 - **Índices clave (hint físico):** mc_number, usdot_number, vin, license_plate, ifta_state_number, expiration_date (compliance), dispatch_id+recorded_at (tracking), tenant_id (todas).
 - **Enums** se modelan como `int` con comentario en este nivel lógico; en EF Core serán enums tipados.
