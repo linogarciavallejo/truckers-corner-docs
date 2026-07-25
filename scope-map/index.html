@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truckers Corner — What v1 Does · What Phase 2 Adds</title>
+<style>
+  :root{
+    --brand:#1F4E79; --brand2:#2E74B5; --ink:#0F172A; --mut:#64748B;
+    --bg:#F4F6FA; --card:#FFFFFF; --line:#E2E8F0;
+    --v1:#15803D; --v1bg:#F0FDF4; --v1line:#BBF7D0;
+    --f2:#1D4ED8; --f2bg:#EFF4FF; --f2line:#C7D7FE;
+    --warn:#B45309; --warnbg:#FFFBEB; --warnline:#FDE68A;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:Arial, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50; background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 1px 8px rgba(15,23,42,.06);
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:12px 24px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .logo{ font-size:18px; font-weight:bold; color:var(--brand); white-space:nowrap; }
+  .logo span{ color:var(--mut); font-weight:normal; }
+  .legend{ display:flex; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap; }
+  .chip{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--mut); }
+  .dot{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .dot.v1{ background:var(--v1); }
+  .dot.f2{ background:#fff; border:2.5px solid var(--f2); }
+  .filters{ display:flex; gap:6px; }
+  .fbtn{
+    font-size:13px; padding:6px 14px; border-radius:20px; border:1px solid var(--line);
+    background:#fff; color:var(--mut); cursor:pointer; font-family:inherit;
+  }
+  .fbtn:hover{ border-color:var(--brand2); color:var(--brand); }
+  .fbtn.active{ background:var(--brand); border-color:var(--brand); color:#fff; }
+
+  /* ---------- hero ---------- */
+  .hero{ max-width:1180px; margin:0 auto; padding:44px 24px 10px; }
+  .hero h1{ font-size:31px; color:var(--brand); line-height:1.2; }
+  .hero p.sub{ margin-top:12px; font-size:16.5px; color:#334155; max-width:900px; }
+  .hero p.sub b.g{ color:var(--v1); }
+  .hero p.sub b.b{ color:var(--f2); }
+  .howto{
+    margin-top:18px; display:inline-flex; gap:10px; align-items:center;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 16px;
+    font-size:14px; color:var(--mut);
+  }
+  .counts{ margin-top:14px; font-size:14px; color:var(--mut); }
+  .counts b{ color:var(--ink); }
+
+  /* ---------- sections ---------- */
+  .wrap{ max-width:1180px; margin:0 auto; padding:8px 24px 60px; }
+  h2.sec{
+    margin:42px 0 6px; font-size:14px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--mut); font-weight:bold;
+  }
+  h2.sec + p.secdesc{ color:var(--mut); font-size:14.5px; margin-bottom:18px; }
+
+  /* ---------- stage cards (journey) ---------- */
+  .stage{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    margin-bottom:18px; overflow:hidden; box-shadow:0 1px 4px rgba(15,23,42,.05);
+  }
+  .stage-head{
+    display:flex; align-items:center; gap:14px; padding:15px 22px;
+    border-bottom:1px solid var(--line); background:#FBFCFE;
+  }
+  .stage-num{
+    width:34px; height:34px; border-radius:50%; background:var(--brand); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:16px; flex:none;
+  }
+  .stage-ico{ font-size:22px; }
+  .stage-head h3{ font-size:19px; color:var(--ink); }
+  .stage-head .tag{
+    margin-left:auto; font-size:12px; color:var(--warn); background:var(--warnbg);
+    border:1px solid var(--warnline); padding:3px 10px; border-radius:12px; white-space:nowrap;
+  }
+  .stage-body{ display:grid; grid-template-columns:1fr 1fr; }
+  .col{ padding:18px 22px; }
+  .col.v1col{ border-right:1px solid var(--line); }
+  .coltitle{ font-size:12.5px; letter-spacing:.09em; text-transform:uppercase; font-weight:bold; margin-bottom:12px; }
+  .v1col .coltitle{ color:var(--v1); }
+  .f2col .coltitle{ color:var(--f2); }
+  ul.items{ list-style:none; display:flex; flex-direction:column; gap:10px; }
+  ul.items li{
+    display:flex; gap:10px; align-items:flex-start; font-size:14.5px; color:#1E293B;
+    padding:9px 12px; border-radius:9px;
+  }
+  li.v1{ background:var(--v1bg); border:1px solid var(--v1line); }
+  li.f2{ background:var(--f2bg); border:1px solid var(--f2line); }
+  li .mark{ flex:none; margin-top:2px; }
+  li.v1 .mark{ color:var(--v1); font-weight:bold; }
+  li.f2 .mark{ width:11px; height:11px; border-radius:50%; border:2.5px solid var(--f2); margin-top:5px; }
+  li .note{ display:block; font-size:12.5px; color:var(--mut); margin-top:3px; }
+  .empty{ font-size:13px; color:var(--mut); font-style:italic; padding:9px 2px; }
+
+  /* ---------- transversal grid ---------- */
+  .tgrid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .tcard{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:18px 20px; box-shadow:0 1px 4px rgba(15,23,42,.05);
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .tcard .thead{ display:flex; align-items:center; gap:10px; }
+  .tcard .thead .stage-ico{ font-size:20px; }
+  .tcard h3{ font-size:16.5px; color:var(--ink); }
+  .tcard .coltitle{ margin-bottom:6px; }
+  .tcard ul.items{ gap:8px; }
+  .tcard ul.items li{ font-size:13.5px; padding:8px 11px; }
+
+  /* ---------- clarifications ---------- */
+  .warnbox{
+    margin-top:42px; background:var(--warnbg); border:1px solid var(--warnline);
+    border-radius:14px; padding:24px 26px;
+  }
+  .warnbox h2{ font-size:18px; color:var(--warn); display:flex; gap:10px; align-items:center; }
+  .warnbox .wgrid{ margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; }
+  .warnbox .witem{
+    background:#fff; border:1px solid var(--warnline); border-radius:10px;
+    padding:13px 15px; font-size:14px; color:#3F2E00;
+  }
+  .warnbox .witem b{ color:var(--warn); }
+
+  /* ---------- closing / footer ---------- */
+  .closing{
+    margin-top:38px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px 26px; font-size:15px; color:#334155;
+  }
+  .closing b{ color:var(--brand); }
+  footer{
+    max-width:1180px; margin:0 auto; padding:22px 24px 40px; color:#94A3B8; font-size:12.5px;
+    border-top:1px solid var(--line); margin-top:26px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+
+  /* ---------- filter modes ---------- */
+  body.only-v1 li.f2, body.only-v1 .f2col, body.only-f2 li.v1, body.only-f2 .v1col{ display:none; }
+  body.only-v1 .stage-body, body.only-f2 .stage-body{ grid-template-columns:1fr; }
+  body.only-v1 .col.v1col{ border-right:none; }
+  @media print{ .topbar{ position:static; } .filters{ display:none; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">TruckersCorner <span>— platform map</span></div>
+    <div class="legend">
+      <span class="chip"><span class="dot v1"></span> Yours from day one (v1)</span>
+      <span class="chip"><span class="dot f2"></span> Coming in Phase 2</span>
+      <div class="filters">
+        <button class="fbtn active" data-mode="all">View everything</button>
+        <button class="fbtn" data-mode="only-v1">Day one only</button>
+        <button class="fbtn" data-mode="only-f2">Phase 2 only</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>What the platform does from day one — and what Phase 2 adds</h1>
+  <p class="sub">
+    This page sums up the scope <b>from your seat</b>: every line says what you, your team or your drivers will be able to do.
+    <b class="g">Everything in green ships complete in v1</b> — it replaces your manual operation end to end.
+    <b class="b">Everything in blue is Phase 2</b>: the growth into a product for the industry, built <i>on top</i> of v1, module by module, whenever you decide.
+  </p>
+  <div class="howto">💡 Use the buttons above to see only what's live on day one, or only what comes later.</div>
+  <div class="counts" id="counts"></div>
+</div>
+
+<div class="wrap">
+
+  <h2 class="sec">The journey of a load</h2>
+  <p class="secdesc">The 7 stages you live every day, from posting the truck to closing the load.</p>
+
+  <!-- ============ 1 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">1</div><div class="stage-ico">🚚</div><h3>I post my truck</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>I post each truck's availability: date, location, preferred lanes, equipment type and minimum rate per mile.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>I declare the real capacity: pallets and weight, <b>FTL or LTL</b> (whether it takes partial loads), reefer temperature range and securement (chains, straps, tarps).</span></li>
+          <li class="v1"><span class="mark">✓</span><span>My brokers receive the availability <b>by email, automatically</b> — and their replies flow straight into the system.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Brokers log into the platform with their own accounts and post their loads directly (self-service portal).</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">2</div><div class="stage-ico">🔎</div><h3>I land the load</h3><span class="tag">⚖ includes a decision that's yours to make</span></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>DAT loads come into the system and get <b>ranked</b> against my available truck.
+            <span class="note">How they come in — automatically via API, AI-assisted (you copy/paste or upload a screenshot) or quick manual entry — depends on the option you choose. That decision is yours and is still pending.</span></span></li>
+          <li class="v1"><span class="mark">✓</span><span>The broker's rate confirmation (PDF, <b>any format</b>) is read by AI; I just review, fix if needed and <b>sign electronically</b> on screen. Goodbye print, hand-sign and scan.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>Multi-stop loads supported (several pickups and several deliveries on the same load).</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Negotiation with the broker inside the platform (offers and counter-offers with full history).</span></li>
+          <li class="f2"><span class="mark"></span><span>More load boards beyond DAT (Truckstop, 123Loadboard).</span></li>
+          <li class="f2"><span class="mark"></span><span>Broker credit data at a glance (Ansonia / TransCredit).</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">3</div><div class="stage-ico">📦</div><h3>I dispatch</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>The signed rate confirmation becomes an order; I assign <b>driver + truck + trailer</b> and the system validates equipment compatibility, capacity and compliance before letting me dispatch.</span></li>
+          <li class="v1"><span class="mark">✓</span><span><b>Multi-load:</b> one trip can carry several loads (LTL) and I decide the stop sequence.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>The driver gets everything in his app and <b>confirms he saw it</b> (acknowledgment). He never sees rates or financial information.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <div class="empty">This stage ships complete in v1.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">4</div><div class="stage-ico">🛰️</div><h3>On the road</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>I see the truck on the map <b>from the moment the driver accepts</b> — not from pickup: ETA against the appointment, and alerts if he's running late or hasn't moved for a while.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>Automatic check-in on arrival at the shipper (geofence); BOL, seal number and weight tickets captured with the camera.</span></li>
+          <li class="v1"><span class="mark">✓</span><span><b>Detention &gt;2h detected and documented on its own</b> — with time, GPS and photos — at pickup and at delivery. Evidence ready to bill it.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>The driver reports statuses (fuel stop, rest break, traffic delay) and the reefer temperature from his app.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Sensors and telematics: automatic reefer temperature, ELD / Hours of Service, automatic route-deviation detection.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">5</div><div class="stage-ico">📬</div><h3>I deliver</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span><b>Signed POD</b> captured with the camera right at delivery.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>Quantity check: shortages, overages, damages or refusals are logged as an <b>open case with their evidence</b> (photos, notes) on the spot.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Full claims workflow: investigation, follow-up and formal resolution of every case.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">6</div><div class="stage-ico">💵</div><h3>I get paid</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>The invoice goes to the broker with everything attached: rate confirmation, POD and <b>accessorials with their evidence</b> (detention, lumper). Nothing to reconstruct later.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>The commission is calculated on its own with each broker's % and charged automatically (card). The broker pays you the freight directly, same as today.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Factoring / quick-pay: payment advanced for a fee, integrated into the platform.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 7 ============ -->
+  <div class="stage">
+    <div class="stage-head"><div class="stage-num">7</div><div class="stage-ico">🗄️</div><h3>I close the load</h3></div>
+    <div class="stage-body">
+      <div class="col v1col"><div class="coltitle">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>Closure checklist: the load doesn't get archived until BOL, POD, invoice and exceptions are complete. <b>Nothing is left half-done.</b></span></li>
+          <li class="v1"><span class="mark">✓</span><span>The closed load is archived and <b>immutable</b> — my complete backup for any dispute or audit, months later.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>At closure, the trip's numbers are calculated: on time or not, detention recovered, profitability.</span></li>
+        </ul>
+      </div>
+      <div class="col f2col"><div class="coltitle">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Deep analysis of the accumulated history (see "Reports &amp; analytics" below).</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ transversal ============ -->
+  <h2 class="sec">Platform-wide capabilities</h2>
+  <p class="secdesc">What runs alongside every stage, all the time.</p>
+
+  <div class="tgrid">
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">🎙️</span><h3>Voice on the road <span style="color:var(--mut);font-size:12px;">(the flagship)</span></h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>Messages I send the driver in transit are <b>announced and read out loud</b> (CarPlay-style), and he replies <b>by dictating</b>. English and Spanish.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>It does not read documents or financial information — it's a <b>road-safety</b> feature, exactly as you defined it.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Voice expansions (e.g., a full conversational assistant).</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">💬</span><h3>Communication</h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>Per-load messages between dispatcher and driver (the base the voice feature runs on), push and email notifications, and each load's event history.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Full hub: broker emails synced into each load's thread, SMS, AI phone calls to brokers, archive and audit of all communication.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">🛡️</span><h3>Compliance</h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>Carrier, driver and equipment documents with <b>expirations watched</b> (insurance, CDL, medical card, inspections, permits) and configurable early alerts.</span></li>
+          <li class="v1"><span class="mark">✓</span><span><b>Automatic blocking:</b> nobody gets dispatched with an expired document. Carrier verification against FMCSA.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Automatic reading of more documents (BOL, POD, third-party invoices), versioning, automated retention and audit packages.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">📊</span><h3>Reports &amp; analytics</h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>A dashboard with the essentials of the operation: available trucks, loads in transit, pending confirmations, commissions, <b>per-carrier profitability</b> and history.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Executive dashboards, carrier/broker/driver scorecards, forecasting (volume, cash flow, margins) and AI recommendations.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">⚙️</span><h3>Administration</h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>Users with 3 roles: <b>Admin, Dispatcher and Driver</b> — everyone sees only what's theirs.</span></li>
+          <li class="v1"><span class="mark">✓</span><span>I configure without a programmer: <b>commission % per broker</b>, expiration-alert windows, detention free time and my catalogs.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span>Advanced roles (accounting, compliance officer…), corporate security (MFA/SSO) and configurable approval workflows.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><span class="stage-ico">🌐</span><h3>From your operation to a product</h3></div>
+      <div>
+        <div class="coltitle" style="color:var(--v1)">From day one</div>
+        <ul class="items">
+          <li class="v1"><span class="mark">✓</span><span>The platform is born <b>multi-company ready</b>: your operation is the first one, with no rework later.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="coltitle" style="color:var(--f2)">Phase 2</div>
+        <ul class="items">
+          <li class="f2"><span class="mark"></span><span><b>Sell access</b> to other carriers and brokers — subscriptions, data isolated per company — with Truckers Corner as the first success story.</span></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ clarifications ============ -->
+  <div class="warnbox">
+    <h2>⚠️ Four clarifications — so there are no surprises</h2>
+    <div class="wgrid">
+      <div class="witem"><b>Voice does NOT read rate confirmations</b> or full documents — only operational messages. It's a safety-at-the-wheel feature, with the scope you defined yourself.</div>
+      <div class="witem"><b>The broker does not log into the system in v1.</b> Everything that reaches him (your availability, the invoice with its evidence) travels by email — the way the industry works today. His portal is Phase 2.</div>
+      <div class="witem"><b>The reefer temperature is reported by the driver</b> from his app. Automatic sensors and telematics are Phase 2.</div>
+      <div class="witem"><b>No factoring in v1.</b> Payments keep working like today: the broker pays you directly. Factoring / quick-pay comes in Phase 2.</div>
+    </div>
+  </div>
+
+  <!-- ============ closing ============ -->
+  <div class="closing">
+    <b>In one sentence:</b> v1 ships complete and operational — it replaces your manual operation from day one. Phase 2 is not "what was left out": it's the growth into a product for the industry, it's built <b>on top</b> of v1 (nothing gets rewritten), and you choose which block and in what order. The v1 details live in the <b>Quotation</b>; the full Phase 2 picture, in the <b>Phase 2 Roadmap</b>.
+  </div>
+
+</div>
+
+<footer>
+  <span>Truckers Corner · Prepared by Sergio Ivan Lima (Analysis) · Lino Garcia Vallejo (Architecture &amp; Development)</span>
+  <span>Confidential — client working material</span>
+</footer>
+
+<script>
+  // filters
+  const btns = document.querySelectorAll('.fbtn');
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.body.classList.remove('only-v1','only-f2');
+    if (b.dataset.mode !== 'all') document.body.classList.add(b.dataset.mode);
+  }));
+  // counts
+  const nV1 = document.querySelectorAll('li.v1').length;
+  const nF2 = document.querySelectorAll('li.f2').length;
+  document.getElementById('counts').innerHTML =
+    '<b>' + nV1 + ' capabilities from day one</b> · ' + nF2 + ' more in Phase 2';
+</script>
+
+</body>
+</html>
