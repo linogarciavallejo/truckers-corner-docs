@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truckers Corner — How We Deliver &amp; How You Validate</title>
+<style>
+  :root{
+    --brand:#1F4E79; --brand-soft:#2E74B5; --ink:#0F172A; --muted:#5B6B7E;
+    --line:#E2E8F0; --canvas:#F6F8FB; --card:#FFFFFF;
+    --green:#15803D; --green-soft:#E9F7EE; --amber:#B45309; --amber-soft:#FFF6E6;
+    --blue-soft:#EAF2FB;
+  }
+  *{box-sizing:border-box; margin:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif; color:var(--ink);
+       background:var(--canvas); line-height:1.45; padding-bottom:3rem}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 1.25rem}
+
+  header{background:var(--brand); color:#fff; padding:1.6rem 0 1.4rem; margin-bottom:1.75rem}
+  header h1{font-size:1.55rem; font-weight:650; letter-spacing:.2px}
+  header p{color:#C9D8EA; margin-top:.3rem; font-size:.95rem}
+
+  section{margin-bottom:2.1rem}
+  h2{color:var(--brand); font-size:1.12rem; margin-bottom:.25rem}
+  .sub{color:var(--muted); font-size:.9rem; margin-bottom:1rem}
+
+  /* ---- delivery loop ---- */
+  .loop{display:flex; gap:.5rem; align-items:stretch; flex-wrap:wrap}
+  .step{flex:1 1 140px; background:var(--card); border:1px solid var(--line); border-radius:.6rem;
+        padding:.8rem .85rem; position:relative}
+  .step .n{display:inline-grid; place-items:center; width:1.45rem; height:1.45rem; border-radius:50%;
+           background:var(--brand); color:#fff; font-size:.78rem; font-weight:700; margin-bottom:.45rem}
+  .step h3{font-size:.88rem; margin-bottom:.25rem}
+  .step p{font-size:.8rem; color:var(--muted)}
+  .step.pay{background:var(--green-soft); border-color:#BBE3C8}
+  .step.pay .n{background:var(--green)}
+  .loop-note{margin-top:.75rem; font-size:.85rem; color:var(--muted); background:var(--blue-soft);
+             border:1px solid #CBDDF2; border-radius:.5rem; padding:.6rem .8rem}
+  .loop-note b{color:var(--brand)}
+
+  /* ---- journey ---- */
+  .journey{background:var(--card); border:1px solid var(--line); border-radius:.7rem; overflow:hidden}
+  .j-head{background:var(--ink); color:#fff; padding:.7rem 1rem; display:flex; gap:1rem;
+          align-items:baseline; flex-wrap:wrap}
+  .j-head .id{font-weight:700; letter-spacing:.3px}
+  .j-head .route{color:#C7D2E1; font-size:.9rem}
+  .j-row{display:flex; gap:.9rem; padding:.7rem 1rem; border-top:1px solid var(--line); align-items:flex-start}
+  .j-row:nth-child(even){background:#FBFCFE}
+  .ph{flex:0 0 4.6rem; text-align:center; font-size:.68rem; font-weight:700; color:#fff;
+      border-radius:.35rem; padding:.28rem .2rem; margin-top:.1rem}
+  .p2{background:#548235} .p3{background:#C55A11} .p4{background:#7030A0} .p5{background:#BF8F00}
+  .j-txt{flex:1; font-size:.875rem}
+  .j-txt b{color:var(--brand)}
+  .j-money{flex:0 0 8.5rem; text-align:right; font-size:.85rem; font-variant-numeric:tabular-nums;
+           color:var(--muted); white-space:nowrap}
+  .j-money.strong{color:var(--green); font-weight:700}
+  .j-total{display:flex; justify-content:flex-end; gap:2rem; padding:.75rem 1rem; background:var(--green-soft);
+           border-top:2px solid #BBE3C8; font-size:.9rem}
+  .j-total div b{font-variant-numeric:tabular-nums}
+  .val-tag{display:inline-block; background:var(--amber-soft); color:var(--amber); border:1px solid #F2DBB4;
+           font-size:.72rem; border-radius:.35rem; padding:.1rem .45rem; margin-left:.4rem; font-weight:600}
+
+  /* ---- sessions table ---- */
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line);
+        border-radius:.6rem; overflow:hidden; font-size:.86rem}
+  th{background:var(--brand); color:#fff; text-align:left; padding:.55rem .8rem; font-size:.8rem}
+  th:last-child, td:last-child{text-align:right; white-space:nowrap}
+  td{padding:.55rem .8rem; border-top:1px solid var(--line); vertical-align:top}
+  tr:nth-child(even) td{background:#FBFCFE}
+  td .ph-chip{display:inline-block; min-width:1.5rem; text-align:center; font-size:.7rem; font-weight:700;
+              color:#fff; background:var(--brand-soft); border-radius:.3rem; padding:.12rem .4rem; margin-right:.5rem}
+  .total-row td{background:var(--green-soft)!important; font-weight:700; color:var(--green);
+                border-top:2px solid #BBE3C8}
+
+  /* ---- pre-trip ---- */
+  .pretrip{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--brand);
+           border-radius:.6rem; padding:1.1rem 1.2rem}
+  .pretrip .lead{font-size:.95rem; margin-bottom:.9rem}
+  .pretrip .lead b{color:var(--brand)}
+  .checks{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.6rem}
+  .check{background:var(--canvas); border:1px solid var(--line); border-radius:.5rem; padding:.6rem .7rem}
+  .check h4{font-size:.82rem; color:var(--brand); margin-bottom:.2rem}
+  .check p{font-size:.78rem; color:var(--muted)}
+  .pretrip .punch{margin-top:.9rem; font-size:.9rem; background:var(--green-soft); border:1px solid #BBE3C8;
+                  border-radius:.5rem; padding:.6rem .8rem; color:var(--ink)}
+  .pretrip .punch b{color:var(--green)}
+  .pretrip .board-note{margin-top:.6rem; font-size:.9rem; background:var(--blue-soft); border:1px solid #CBDDF2;
+                  border-radius:.5rem; padding:.6rem .8rem}
+  .pretrip .board-note b{color:var(--brand)}
+  .done-chip{display:inline-block; background:var(--green); color:#fff; font-size:.72rem; font-weight:700;
+             border-radius:.8rem; padding:.1rem .55rem; vertical-align:1px}
+
+  .contract-note{font-size:.85rem; color:var(--muted); background:var(--card); border:1px dashed var(--line);
+                 border-radius:.5rem; padding:.65rem .85rem}
+  .contract-note b{color:var(--brand)}
+
+  footer{margin-top:2.2rem; text-align:center; color:#9AA7B6; font-size:.78rem}
+
+  @media print{
+    body{background:#fff; padding-bottom:0}
+    header{margin-bottom:1rem; padding:1rem 0}
+    section{break-inside:avoid; margin-bottom:1.2rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>How We Deliver &amp; How You Validate</h1>
+    <p>Truckers Corner platform · the working rhythm from first phase to launch</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1 · THE DELIVERY LOOP -->
+  <section>
+    <h2>1 · The delivery loop — repeated for every phase</h2>
+    <p class="sub">You never wait until the end to see anything, and you never review blind.</p>
+    <div class="loop">
+      <div class="step"><span class="n">1</span><h3>I build</h3>
+        <p>Each phase, piece by piece — published continuously to your <b>preview link</b> as it takes shape.</p></div>
+      <div class="step"><span class="n">2</span><h3>You watch early</h3>
+        <p>Open the preview while I'm still building. Feedback lands <b>before your review clock even starts</b> — the formal review is your second look, not your first.</p></div>
+      <div class="step"><span class="n">3</span><h3>Live demo</h3>
+        <p>When the phase is done, we walk through it together — 30 minutes, your real data.</p></div>
+      <div class="step"><span class="n">4</span><h3>Guided checklist</h3>
+        <p>You get a short list: “try these 10–15 things.” No guessing what to test.</p></div>
+      <div class="step"><span class="n">5</span><h3>You accept</h3>
+        <p>Short review window — you already saw it twice. Using it for real counts as accepting it.</p></div>
+      <div class="step pay"><span class="n">6</span><h3>Milestone paid</h3>
+        <p>The phase closes, the next one is already underway.</p></div>
+    </div>
+    <p class="loop-note"><b>The preview link:</b> a private, always-on URL where every phase appears as it's built —
+    hosted at my own cost until your production environment starts in Phase&nbsp;4. Development never stops while a
+    review is open: each delivery is tagged and change-logged, so it's always clear what you're validating.</p>
+  </section>
+
+  <!-- 2 · THE JOURNEY OF ONE LOAD -->
+  <section>
+    <h2>2 · What you'll actually validate — the journey of one load</h2>
+    <p class="sub">One real load, end to end. Each step lands in a phase; when you validate that phase, you run these very steps with your own brokers and drivers.</p>
+
+    <div class="journey">
+      <div class="j-head">
+        <span class="id">LOAD TC-1042</span>
+        <span class="route">Laredo, TX → Dallas, TX · dry van · 53′</span>
+      </div>
+
+      <div class="j-row">
+        <span class="ph p2">PHASE 2</span>
+        <div class="j-txt">You post the truck's availability — the platform <b>emails your broker list</b> automatically. A broker replies with a rate confirmation PDF.<span class="val-tag">you validate: post &amp; broadcast</span></div>
+        <div class="j-money">offer: $1,850</div>
+      </div>
+
+      <div class="j-row">
+        <span class="ph p3">PHASE 3</span>
+        <div class="j-txt">The <b>AI reads the rate confirmation</b> — any broker's format — and shows you every extracted field next to the PDF. You confirm, e-sign, and it becomes an Order.<span class="val-tag">you validate: feed it YOUR real rate confs</span></div>
+        <div class="j-money">rate: $1,850</div>
+      </div>
+
+      <div class="j-row">
+        <span class="ph p4">PHASE 4</span>
+        <div class="j-txt"><b>Dispatch:</b> assign driver + truck + trailer (the platform checks equipment and capacity fit). Your driver sees it on his phone, you see him move on the map — ETA, geofence check-in, BOL photographed at pickup.<span class="val-tag">you validate: run it with a real driver</span></div>
+        <div class="j-money">—</div>
+      </div>
+
+      <div class="j-row">
+        <span class="ph p4">PHASE 4</span>
+        <div class="j-txt">At delivery the receiver runs late: <b>2h 40m of detention, documented automatically</b> — timestamps, GPS, photos. Signed POD captured on the phone. Today that's money lost to “prove it”; here the evidence builds itself.</div>
+        <div class="j-money">+ $150 detention</div>
+      </div>
+
+      <div class="j-row">
+        <span class="ph p5">PHASE 5</span>
+        <div class="j-txt"><b>One click:</b> invoice with rate conf + POD + detention evidence attached. Commission per your agreed terms with this broker (10%), charged to card via Stripe. Load formally closed and archived — untouchable.<span class="val-tag">you validate: the money math</span></div>
+        <div class="j-money">billable: $2,000</div>
+      </div>
+
+      <div class="j-total">
+        <div>commission (10%): <b>$200</b></div>
+        <div class="strong" style="color:var(--green)">net to carrier: <b>$1,800</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · YOUR TIME -->
+  <section>
+    <h2>3 · Your part: short, guided sessions — not homework</h2>
+    <p class="sub">Validation isn't “days of testing.” It's a few scheduled sessions per phase, each driven by a checklist, around your dispatch day.</p>
+    <table>
+      <tr><th>Phase</th><th>What you validate</th><th>Your time</th></tr>
+      <tr><td><span class="ph-chip">0</span>Foundations</td><td>Log in, look around the shell</td><td>1 × 15 min</td></tr>
+      <tr><td><span class="ph-chip">1</span>Onboarding &amp; compliance</td><td>Register your real fleet, drivers and documents; watch the expiration alerts fire</td><td>2–3 × 30 min</td></tr>
+      <tr><td><span class="ph-chip">2</span>Sourcing &amp; matching</td><td>Post a truck, watch the broadcast go out, see replies land</td><td>2 × 30 min</td></tr>
+      <tr><td><span class="ph-chip">3</span>Rate conf AI + e-sign</td><td>Feed it your real rate confirmations, check every read, sign one</td><td>2–3 × 30 min</td></tr>
+      <tr><td><span class="ph-chip">4</span>Dispatch, tracking &amp; mobile</td><td>Run a real load with a real driver's phone — the big one</td><td>3 × 45 min</td></tr>
+      <tr><td><span class="ph-chip">5</span>Billing &amp; Stripe</td><td>Invoice that load, verify the commission math, run a test charge</td><td>2 × 30 min</td></tr>
+      <tr><td><span class="ph-chip">6</span>Voice &amp; launch</td><td>Hands-free messages on the road; store builds on your phone</td><td>2 × 30 min</td></tr>
+      <tr class="total-row"><td colspan="2">Total hands-on time across the whole project</td><td>≈ 8–10 hours</td></tr>
+    </table>
+  </section>
+
+  <!-- 4 · PRE-TRIP INSPECTION -->
+  <section>
+    <h2>4 · Why what you validated stays validated</h2>
+    <div class="pretrip">
+      <p class="lead">Every new version of the software goes through a <b>pre-trip inspection</b> — automatic, before it ever reaches you. Same idea as your drivers': you don't just check the new cargo, you walk around the whole truck.</p>
+      <div class="checks">
+        <div class="check"><h4>Unit checks</h4><p>Every money calculation, every business rule — hundreds of them, one by one.</p></div>
+        <div class="check"><h4>Integration checks</h4><p>The system against a real database — the way it runs in real life, not in theory.</p></div>
+        <div class="check"><h4>End-to-end checks</h4><p>A robot clicks through the portal like a person: post, dispatch, invoice.</p></div>
+        <div class="check"><h4>Regression — your documents</h4><p>Your own real rate confirmations are re-read on <i>every single version</i>, forever.</p></div>
+      </div>
+      <p class="punch"><b>If anything you already validated breaks, the inspection fails and that version never leaves the yard.</b> I find out — you don't have to.</p>
+      <p class="board-note"><b>How you'll see it:</b> every piece of work lives on a shared status board (Linear) you can open any time.
+      The moment an item shows <span class="done-chip">✓ Done</span> it means exactly two things: it passed the full pre-trip
+      inspection, <i>and</i> it's already published — on your preview link until production goes live in Phase&nbsp;4,
+      and on your production environment from then on. “Done” never means “done on my machine.”</p>
+    </div>
+  </section>
+
+  <!-- 5 · CONTRACT NOTE -->
+  <section>
+    <p class="contract-note"><b>What this means for the paperwork:</b> because you see every phase twice before formally reviewing it
+    — live on the preview, then in the demo — a <b>10-business-day</b> review window per milestone is comfortable,
+    and anything you're already using for real loads simply counts as accepted. The contract just writes down the way we actually work.</p>
+  </section>
+
+  <footer>Truckers Corner · working process overview · August 2026</footer>
+</div>
+
+</body>
+</html>
