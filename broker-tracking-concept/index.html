@@ -199,6 +199,7 @@
     <div class="stat hot"><div class="n" id="stActive">3</div><div class="l" data-i="stActive"></div></div>
     <div class="stat"><div class="n" id="stTransit">1</div><div class="l" data-i="stTransit"></div></div>
     <div class="stat"><div class="n" id="stToday">1</div><div class="l" data-i="stToday"></div></div>
+    <div class="stat"><div class="n">14</div><div class="l" data-i="stMonth"></div></div>
   </div>
   <div class="clockrow">
     <span class="clock"><span data-i="clockL"></span> <b id="clock">1:05 PM</b> CT</span>
@@ -358,6 +359,70 @@
         </div>
       </div>
     </div>
+
+    <h2 data-i="histH" style="margin-top:10px"></h2>
+
+    <!-- TC-1038 (history) -->
+    <div class="load" id="ld38">
+      <button class="load-top" aria-expanded="false" data-toggle="ld38">
+        <span class="lid">TC-1038</span>
+        <span class="lane">Brownsville, TX → Fort Worth, TX<small>53' Reefer · <span data-i="aug19"></span></small></span>
+        <span class="chip delivered" data-i="chDelivered"></span>
+        <svg class="caret" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="load-body">
+        <div class="meta">
+          <div><b data-i="mDriver"></b><span>R. Ibarra</span></div>
+          <div><b data-i="mTruck"></b><span>Unit 09 · 53' Reefer</span></div>
+          <div><b data-i="mDelivAt"></b><span class="eta-ok"><span data-i="aug19"></span> · 2:12 PM</span></div>
+        </div>
+        <ul class="tl">
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msBooked"></b><span><span data-i="aug18"></span> · 3:22 PM</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msAtPickup"></b><span><span data-i="aug19"></span> · 7:05 AM · Brownsville, TX</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msBol"></b><span>7:38 AM</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msTransit"></b><span>US-77 · I-35W</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msDelivered"></b><span>2:12 PM · Fort Worth, TX</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msPod"></b><span>2:29 PM</span></span></li>
+        </ul>
+        <div class="docs">
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Rate confirmation</span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>BOL</span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8l4 4 8-9" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"/></svg><span data-i="podReady"></span></span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12v9H2z M2 4l6 5 6-5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span data-i="invSent"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TC-1035 (history) -->
+    <div class="load" id="ld35">
+      <button class="load-top" aria-expanded="false" data-toggle="ld35">
+        <span class="lid">TC-1035</span>
+        <span class="lane">El Paso, TX → Austin, TX<small>53' Dry Van · <span data-i="aug14"></span></small></span>
+        <span class="chip delivered" data-i="chDelivered"></span>
+        <svg class="caret" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="load-body">
+        <div class="meta">
+          <div><b data-i="mDriver"></b><span>A. Fuentes</span></div>
+          <div><b data-i="mTruck"></b><span>Unit 03 · 53' Dry Van</span></div>
+          <div><b data-i="mDelivAt"></b><span class="eta-ok"><span data-i="aug14"></span> · 11:47 AM</span></div>
+        </div>
+        <ul class="tl">
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msBooked"></b><span><span data-i="aug13"></span> · 9:10 AM</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msAtPickup"></b><span><span data-i="aug13"></span> · 4:30 PM · El Paso, TX</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msBol"></b><span>4:58 PM</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msTransit"></b><span>I-10 E</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msDelivered"></b><span>11:47 AM · Austin, TX</span></span></li>
+          <li class="done"><span class="nd"></span><span class="tx"><b data-i="msPod"></b><span>12:02 PM</span></span></li>
+        </ul>
+        <div class="docs">
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Rate confirmation</span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>BOL</span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8l4 4 8-9" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"/></svg><span data-i="podReady"></span></span>
+          <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12v9H2z M2 4l6 5 6-5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span data-i="invSent"></span></span>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -411,10 +476,11 @@
     en: {
       brandSub:"Broker tracking page", concept:"Concept preview · ships with Stage 4",
       privB:"Private page for Allen Lund Company.",
-      privS:"You arrived from the link in your status email — no account, no password. The link renews with every email and expires when your loads close.",
+      privS:"You arrived from the link in your status email — no account, no password. The link renews with every status email, and your delivery history stays available here.",
       privK:"trk.truckers-corner.com/b/al-7f2…",
       h1a:"Your loads with", h1p:"Every load you have with us, on one page: the truck live on the map, each milestone as it happens, and your documents the moment they exist.",
-      stActive:"Active loads", stTransit:"In transit", stToday:"Delivered today",
+      stActive:"Active loads", stTransit:"In transit", stToday:"Delivered today", stMonth:"Delivered · 30 days",
+      histH:"Delivered · last 30 days", aug13:"Aug 13", aug14:"Aug 14", aug18:"Aug 18", aug19:"Aug 19",
       clockL:"Now", simBtn:"Simulate the afternoon", resetBtn:"Reset the demo",
       simNote:"Watch TC-1047 arrive: milestones complete, documents unlock, and the notice lands in your inbox.",
       mapH:"Live map", mapLive:"Live",
@@ -445,10 +511,11 @@
     es: {
       brandSub:"Página de seguimiento del broker", concept:"Vista de concepto · llega con la Etapa 4",
       privB:"Página privada de Allen Lund Company.",
-      privS:"Llegaste desde el link de tu correo de estatus — sin cuenta, sin contraseña. El link se renueva con cada correo y expira cuando tus cargas cierran.",
+      privS:"Llegaste desde el link de tu correo de estatus — sin cuenta, sin contraseña. El link se renueva con cada correo de estatus, y tu historial de entregas queda disponible aquí.",
       privK:"trk.truckers-corner.com/b/al-7f2…",
       h1a:"Tus cargas con", h1p:"Todas tus cargas con nosotros, en una sola página: el camión en vivo en el mapa, cada hito al momento, y tus documentos apenas existen.",
-      stActive:"Cargas activas", stTransit:"En tránsito", stToday:"Entregadas hoy",
+      stActive:"Cargas activas", stTransit:"En tránsito", stToday:"Entregadas hoy", stMonth:"Entregadas · 30 días",
+      histH:"Entregadas · últimos 30 días", aug13:"13 ago", aug14:"14 ago", aug18:"18 ago", aug19:"19 ago",
       clockL:"Ahora", simBtn:"Simular la tarde", resetBtn:"Reiniciar el demo",
       simNote:"Mirá llegar el TC-1047: los hitos se completan, los documentos se desbloquean y el aviso llega a tu correo.",
       mapH:"Mapa en vivo", mapLive:"En vivo",
