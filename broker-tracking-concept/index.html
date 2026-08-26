@@ -148,6 +148,64 @@
   .doc svg{flex:none}
   .doc.locked{color:var(--ink-faint);border-style:dashed}
 
+  /* ---------- request-a-change ---------- */
+  .cr-row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .cr-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--accent-soft);color:#8a4a1c;background:var(--accent-wash);border-radius:8px;padding:8px 13px;font:600 12.5px/1 var(--sans)}
+  .cr-btn:hover{background:#f0dcc9}
+  .overlay{position:fixed;inset:0;background:rgba(20,26,32,.45);display:none;align-items:flex-start;justify-content:center;padding:30px 16px;z-index:60;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(20,26,32,.25);max-width:520px;width:100%;overflow:hidden}
+  .modal-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .modal-h b{font:600 15px/1.3 var(--disp);letter-spacing:.02em}
+  .modal-h .lid{margin-left:auto}
+  .modal-x{flex:none;color:var(--ink-faint);font-size:18px;padding:2px 8px;border-radius:6px}
+  .modal-x:hover{color:var(--ink);background:var(--line-soft)}
+  .modal-b{padding:16px 18px;display:grid;gap:12px}
+  .ffield{display:grid;gap:5px}
+  .ffield label{font:500 11px/1.3 var(--sans);color:var(--ink-soft);letter-spacing:.05em;text-transform:uppercase}
+  .ffield select,.ffield input,.ffield textarea{font:400 14px/1.4 var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+  .ffield textarea{resize:vertical;min-height:64px}
+  .ffield select:focus-visible,.ffield input:focus-visible,.ffield textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .fhint{font:400 11.5px/1.4 var(--sans);color:var(--ink-faint)}
+  .ta-wrap{position:relative}
+  .ta-pop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(20,26,32,.16);max-height:208px;overflow-y:auto;z-index:70;display:none}
+  .ta-pop.open{display:block}
+  .ta-opt{padding:8px 12px;font:400 13.5px/1.4 var(--sans);cursor:pointer}
+  .ta-opt.hi,.ta-opt:hover{background:var(--accent-wash);color:#8a4a1c}
+  .ta-opt b{font-weight:600}
+  .mailprev{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .mailprev .mp-h{padding:10px 14px;border-bottom:1px solid var(--line-soft);font:400 12px/1.5 var(--sans);color:var(--ink-soft)}
+  .mailprev .mp-h b{color:var(--ink)}
+  .mailprev pre{margin:0;padding:12px 14px;font:400 12px/1.6 var(--mono);color:var(--ink);white-space:pre-wrap;background:#fbfaf7}
+
+  /* ---------- change-request workflow ---------- */
+  .wfsec{padding:26px 0 6px}
+  .wfsec h2{font:600 15px/1.2 var(--disp);letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+  .wfsec>.wrap>p{color:var(--ink-soft);max-width:66ch;margin-bottom:14px}
+  .wfcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+  .wfscroll{overflow-x:auto;padding-bottom:4px}
+  .wfsteps{display:grid;grid-template-columns:repeat(6,minmax(152px,1fr));gap:16px;min-width:1000px}
+  .wfstep{position:relative;border:1px solid var(--line);border-radius:10px;padding:12px 12px 14px;background:var(--paper);transition:border-color .3s,box-shadow .3s,background .3s}
+  .wfstep::after{content:"→";position:absolute;right:-14px;top:42%;color:var(--ink-faint);font-weight:700}
+  .wfstep:last-child::after{display:none}
+  .wfstep .who{display:inline-block;border-radius:999px;padding:3px 9px;font:600 10px/1 var(--sans);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+  .who.agent{background:var(--accent-wash);color:#8a4a1c}
+  .who.system{background:#e8eaee;color:#4a5764}
+  .who.dispatcher{background:var(--ok-wash);color:var(--ok)}
+  .who.driver{background:#e3ecf6;color:#2c5c8f}
+  .wfstep b{display:block;font:600 13px/1.3 var(--sans);margin-bottom:4px}
+  .wfstep span{font:400 12px/1.5 var(--sans);color:var(--ink-soft)}
+  .wfstep.now{border-color:var(--accent);box-shadow:0 0 0 3px rgba(186,103,43,.15)}
+  .wfstep.done{border-color:var(--ok);background:var(--ok-wash)}
+  .diffcard{margin-top:14px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;display:none}
+  .diffcard.open{display:block}
+  .diffcard .dr{display:flex;gap:8px;align-items:baseline;font:400 13px/1.6 var(--sans)}
+  .diffcard .dr b{font:600 13px var(--sans)}
+  .diffcard .old{color:var(--ink-faint);text-decoration:line-through}
+  .diffcard .new{color:var(--accent);font-weight:600}
+  .approve-row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .lane-upd{background:var(--accent-wash);color:#8a4a1c;border-radius:6px;padding:2px 7px;font:600 10.5px/1.3 var(--sans);letter-spacing:.03em;text-transform:uppercase;margin-left:6px;vertical-align:middle}
+
   /* ---------- email section ---------- */
   .emailsec{padding:26px 0 6px}
   .emailsec h2{font:600 15px/1.2 var(--disp);letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
@@ -305,6 +363,7 @@
           <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Rate confirmation</span>
           <span class="doc locked" id="doc47pod"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-i="podLocked"></span></span>
         </div>
+        <div class="cr-row"><button class="cr-btn" data-cr="TC-1047" data-from="Dallas, TX" data-origin="Laredo, TX">✎ <span data-i="crBtn"></span></button></div>
       </div>
     </div>
 
@@ -334,6 +393,7 @@
           <span class="doc"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1h6l3 3v11H4z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Rate confirmation</span>
           <span class="doc locked"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-i="podLocked"></span></span>
         </div>
+        <div class="cr-row"><button class="cr-btn" data-cr="TC-1051" data-from="Oklahoma City, OK" data-origin="Houston, TX">✎ <span data-i="crBtn"></span></button></div>
       </div>
     </div>
 
@@ -535,6 +595,38 @@
   </div>
 </section>
 
+<section class="wfsec">
+  <div class="wrap">
+    <h2 data-i="wfH"></h2>
+    <p data-i="wfP"></p>
+    <div class="wfcard">
+      <div class="wfscroll">
+        <div class="wfsteps" id="wfSteps">
+          <div class="wfstep" data-step="1"><span class="who agent" data-i="whoAgent"></span><b data-i="wf1b"></b><span data-i="wf1s"></span></div>
+          <div class="wfstep" data-step="2"><span class="who agent" data-i="whoAgent"></span><b data-i="wf2b"></b><span data-i="wf2s"></span></div>
+          <div class="wfstep" data-step="3"><span class="who system" data-i="whoSystem"></span><b data-i="wf3b"></b><span data-i="wf3s"></span></div>
+          <div class="wfstep" data-step="4"><span class="who dispatcher" data-i="whoDispatcher"></span><b data-i="wf4b"></b><span data-i="wf4s"></span></div>
+          <div class="wfstep" data-step="5"><span class="who driver" data-i="whoDriver"></span><b data-i="wf5b"></b><span data-i="wf5s"></span></div>
+          <div class="wfstep" data-step="6"><span class="who system" data-i="whoSystem"></span><b data-i="wf6b"></b><span data-i="wf6s"></span></div>
+        </div>
+      </div>
+      <div class="diffcard" id="diffCard">
+        <div class="dr"><b data-i="dcLoad"></b><span id="dcLoadV">TC-1051</span></div>
+        <div class="dr"><b id="dcChangeL"></b><span><span class="old" id="dcOld">Oklahoma City, OK</span> → <span class="new" id="dcNew">Tulsa, OK</span></span></div>
+        <div class="dr"><b data-i="dcRate"></b><span data-i="dcRateV"></span></div>
+        <div class="approve-row">
+          <button class="btn" id="dcApprove"><span data-i="dcApproveBtn"></span></button>
+          <span class="simnote" data-i="dcTapNote"></span>
+        </div>
+      </div>
+      <div class="approve-row" id="wfIdleRow">
+        <button class="btn ghost" id="wfWatch"><span data-i="wfWatchBtn"></span></button>
+        <span class="simnote" data-i="wfWatchNote"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="wrap">
   <div class="rules">
     <p><b data-i="r1b"></b> <span data-i="r1"></span></p>
@@ -545,7 +637,45 @@
 
 <footer><div class="wrap" data-i="foot"></div></footer>
 
-<div class="toast" id="toast" role="status"><b data-i="toastB"></b><span data-i="toastS"></span></div>
+<div class="overlay" id="crOverlay" role="dialog" aria-modal="true" aria-labelledby="crTitle">
+  <div class="modal">
+    <div class="modal-h"><b id="crTitle" data-i="crTitle"></b><span class="lid" id="crLoad">TC-1051</span><button class="modal-x" id="crClose" aria-label="Close">×</button></div>
+    <div class="modal-b" id="crForm">
+      <div class="ffield"><label for="crTypeSel" data-i="crType"></label>
+        <select id="crTypeSel">
+          <option value="addr" data-i="crTypeAddr"></option>
+          <option value="add" data-i="crTypeAdd"></option>
+          <option value="rem" data-i="crTypeRem"></option>
+          <option value="date" data-i="crTypeDate"></option>
+          <option value="other" data-i="crTypeOther"></option>
+        </select>
+      </div>
+      <div class="ffield" id="crCityF"><label for="crCity" data-i="crNewDest"></label>
+        <div class="ta-wrap">
+          <input id="crCity" autocomplete="off" spellcheck="false" placeholder="Fort Worth, TX" role="combobox" aria-expanded="false" aria-autocomplete="list">
+          <div class="ta-pop" id="crCityPop" role="listbox"></div>
+        </div>
+        <span class="fhint" data-i="crCityHint"></span>
+      </div>
+      <div class="ffield" id="crStreetF"><label for="crStreet" data-i="crStreet"></label><input id="crStreet" placeholder="2300 N Main St"></div>
+      <div class="ffield" id="crDateF" style="display:none"><label for="crDate" data-i="crNewDate"></label><input id="crDate" type="date" min="2026-08-26">
+        <label for="crWin" data-i="crApptWin" style="margin-top:6px"></label><input id="crWin" placeholder="8:00 AM – 12:00 PM"></div>
+      <div class="ffield" id="crStopF" style="display:none"><label for="crStop" data-i="crWhichStop"></label><input id="crStop" placeholder="Pickup #2 — Houston, TX"></div>
+      <div class="ffield"><label for="crNotes" data-i="crNotes"></label><textarea id="crNotes" data-ph="crNotesPh"></textarea><span class="fhint" data-i="crLangHint"></span></div>
+      <button class="btn" id="crGen"><span data-i="crGenBtn"></span></button>
+    </div>
+    <div class="modal-b" id="crMail" hidden>
+      <div class="mailprev">
+        <div class="mp-h"><b data-i="crFrom"></b> you@allenlundcompany.com<br><b>Subject:</b> <span id="crSubj">TC-1051 · Change request</span></div>
+        <pre id="crBody"></pre>
+      </div>
+      <span class="fhint" data-i="crMailHint"></span>
+      <button class="btn" id="crSend"><span data-i="crSendBtn"></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"><b id="toastT"></b><span id="toastSub"></span></div>
 
 <script>
 (function(){
@@ -561,6 +691,27 @@
       histH:"Delivered", f15:"Last 15 days", f30:"Last 30 days", f90:"Last 90 days",
       aug13:"Aug 13", aug14:"Aug 14", aug18:"Aug 18", aug19:"Aug 19", jul7:"Jul 7", jul8:"Jul 8", jul29:"Jul 29", jul30:"Jul 30",
       histNote:"Sample data — the real page lists every delivery in the selected range.",
+      crBtn:"Request a change", crTitle:"Request a change",
+      crType:"What needs to change?", crTypeAddr:"New delivery address", crTypeAdd:"Add a stop", crTypeRem:"Remove a stop", crTypeDate:"Date / appointment change", crTypeOther:"Something else",
+      crNewDest:"New destination (city)", crCityHint:"City names auto-complete — the address arrives normalized, no typos.",
+      crStreet:"Street address", crNotes:"Notes", crNotesPh:"Anything else the dispatcher should know…", crLangHint:"Write in English, Spanish or Spanglish — the system reads all three.",
+      crGenBtn:"Prepare the email", crFrom:"From:", crMailHint:"The form wrote the email for you — machine-labeled, typo-proof. It sends from YOUR inbox: that is the signature.", crSendBtn:"Send from your inbox (demo)",
+      wfH:"How a change request travels", wfP:"No phone tag, no re-typing — and nothing applies itself. Watch a request move from your keyboard to the driver's cab.",
+      whoAgent:"You (agent)", whoSystem:"System", whoDispatcher:"Dispatcher", whoDriver:"Driver",
+      wf1b:"You fill the form", wf1s:"Right on this page — structured fields, cities auto-complete.",
+      wf2b:"It becomes an email from your inbox", wf2s:"Pre-written and machine-labeled. Your mailbox is the signature.",
+      wf3b:"The system reads it on arrival", wf3s:"Clean or messy, English, Spanish or Spanglish — AI included.",
+      wf4b:"Dispatcher reviews — one tap", wf4s:"Change vs. original, side by side. The tap is the legal signature (revised rate confirmation).",
+      wf5b:"Driver notified instantly", wf5s:"In the app — and read aloud while driving.",
+      wf6b:"Page & report update", wf6s:"This page reflects it live; the rate change lands in the owner's report.",
+      crNewDate:"New date", crApptWin:"Appointment window", crWhichStop:"Which stop?",
+      dcLoad:"Load:", dcRate:"Rate:", dcRateV:"revised rate confirmation to follow",
+      dcChangeAddr:"Delivery:", dcChangeDate:"Appointment:", dcChangeStop:"Stop:", dcChangeOther:"Change:",
+      dcCurrent:"current", dcRemoved:"removed", dcSeeNotes:"see notes",
+      dcApproveBtn:"Approve (dispatcher's tap)", dcTapNote:"The only human step left — and the legal signature.",
+      wfWatchBtn:"▶ Watch the journey", wfWatchNote:"Or press \"Request a change\" on an active load above and send one yourself.",
+      crToastB:"Change approved — driver notified", crToastS:"updated. The revised rate confirmation is on its way; the delta lands in the report.",
+      laneUpdated:"Updated",
       clockL:"Now", simBtn:"Simulate the afternoon", resetBtn:"Reset the demo",
       simNote:"Watch TC-1047 arrive: milestones complete, documents unlock, and the notice lands in your inbox.",
       mapH:"Live map", mapLive:"Live",
@@ -598,6 +749,27 @@
       histH:"Entregadas", f15:"Últimos 15 días", f30:"Últimos 30 días", f90:"Últimos 90 días",
       aug13:"13 ago", aug14:"14 ago", aug18:"18 ago", aug19:"19 ago", jul7:"7 jul", jul8:"8 jul", jul29:"29 jul", jul30:"30 jul",
       histNote:"Datos de muestra — la página real lista todas las entregas del rango elegido.",
+      crBtn:"Solicitar un cambio", crTitle:"Solicitar un cambio",
+      crType:"¿Qué necesita cambiar?", crTypeAddr:"Nueva dirección de entrega", crTypeAdd:"Agregar una parada", crTypeRem:"Quitar una parada", crTypeDate:"Cambio de fecha / cita", crTypeOther:"Otra cosa",
+      crNewDest:"Nuevo destino (ciudad)", crCityHint:"Las ciudades se autocompletan — la dirección llega normalizada, sin typos.",
+      crStreet:"Dirección (calle)", crNotes:"Notas", crNotesPh:"Lo que el dispatcher deba saber…", crLangHint:"Escribí en inglés, español o spanglish — el sistema lee los tres.",
+      crGenBtn:"Preparar el correo", crFrom:"De:", crMailHint:"El formulario escribió el correo por vos — etiquetado para máquina, a prueba de typos. Se envía desde TU buzón: esa es la firma.", crSendBtn:"Enviar desde tu buzón (demo)",
+      wfH:"El camino de un change request", wfP:"Sin llamadas en cadena, sin re-tipeo — y nada se aplica solo. Mirá la solicitud viajar de tu teclado a la cabina del driver.",
+      whoAgent:"Vos (agente)", whoSystem:"Sistema", whoDispatcher:"Dispatcher", whoDriver:"Driver",
+      wf1b:"Llenás el formulario", wf1s:"Aquí mismo — campos estructurados, ciudades autocompletadas.",
+      wf2b:"Se vuelve un correo desde tu buzón", wf2s:"Pre-escrito y etiquetado para máquina. Tu buzón es la firma.",
+      wf3b:"El sistema lo lee al llegar", wf3s:"Limpio o sucio, inglés, español o spanglish — con IA incluida.",
+      wf4b:"El dispatcher revisa — un tap", wf4s:"Cambio vs. original, lado a lado. El tap es la firma legal (rate confirmation revisado).",
+      wf5b:"El driver, avisado al instante", wf5s:"En su app — y leído en voz alta mientras maneja.",
+      wf6b:"Página y reporte se actualizan", wf6s:"Esta página lo refleja en vivo; el delta de tarifa cae al reporte del dueño.",
+      crNewDate:"Nueva fecha", crApptWin:"Ventana de cita", crWhichStop:"¿Cuál parada?",
+      dcLoad:"Carga:", dcRate:"Tarifa:", dcRateV:"rate confirmation revisado en camino",
+      dcChangeAddr:"Entrega:", dcChangeDate:"Cita:", dcChangeStop:"Parada:", dcChangeOther:"Cambio:",
+      dcCurrent:"actual", dcRemoved:"eliminada", dcSeeNotes:"ver notas",
+      dcApproveBtn:"Aprobar (tap del dispatcher)", dcTapNote:"El único paso humano que queda — y la firma legal.",
+      wfWatchBtn:"▶ Ver el recorrido", wfWatchNote:"O tocá «Solicitar un cambio» en una carga activa arriba y mandá uno vos.",
+      crToastB:"Cambio aprobado — driver avisado", crToastS:"actualizada. El rate confirmation revisado va en camino; el delta cae al reporte.",
+      laneUpdated:"Actualizada",
       clockL:"Ahora", simBtn:"Simular la tarde", resetBtn:"Reiniciar el demo",
       simNote:"Mirá llegar el TC-1047: los hitos se completan, los documentos se desbloquean y el aviso llega a tu correo.",
       mapH:"Mapa en vivo", mapLive:"En vivo",
@@ -630,12 +802,15 @@
   function t(k){ return (STR[lang][k] !== undefined) ? STR[lang][k] : (STR.en[k] || k); }
   function applyLang(){
     document.querySelectorAll("[data-i]").forEach(function(el){ el.textContent = t(el.getAttribute("data-i")); });
+    document.querySelectorAll("[data-ph]").forEach(function(el){ el.setAttribute("placeholder", t(el.getAttribute("data-ph"))); });
     document.documentElement.lang = lang;
     document.getElementById("btnEN").classList.toggle("on", lang==="en");
     document.getElementById("btnES").classList.toggle("on", lang==="es");
     document.getElementById("btnEN").setAttribute("aria-pressed", lang==="en");
     document.getElementById("btnES").setAttribute("aria-pressed", lang==="es");
     if (simDone){ applySimTexts(); } else { positionalTexts(); }
+    var dc = document.getElementById("diffCard");
+    if (dc && dc.classList.contains("open")) setDiffTexts();
   }
   document.getElementById("btnEN").addEventListener("click", function(){ lang="en"; applyLang(); });
   document.getElementById("btnES").addEventListener("click", function(){ lang="es"; applyLang(); });
@@ -768,9 +943,7 @@
     document.getElementById("stToday").textContent = "2";
     applySimTexts();
     // toast + second email
-    var toast = document.getElementById("toast");
-    toast.classList.add("show");
-    setTimeout(function(){ toast.classList.remove("show"); }, 6500);
+    setToast(t("toastB"), t("toastS"));
     document.getElementById("mail2").classList.remove("ghosted");
     simBtn.hidden = true; resetBtn.hidden = false;
   }
@@ -798,6 +971,221 @@
   });
 
   resetBtn.addEventListener("click", function(){ location.reload(); });
+
+  /* ---- toast helper ---- */
+  var toastEl = document.getElementById("toast"), toastTimer = 0;
+  function setToast(title, sub){
+    document.getElementById("toastT").textContent = title;
+    document.getElementById("toastSub").textContent = sub;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 6500);
+  }
+
+  /* ---- request-a-change form + workflow ---- */
+  var crState = { load: "TC-1051", from: "Oklahoma City, OK", origin: "Houston, TX" };
+  var overlay = document.getElementById("crOverlay");
+  var crFormEl = document.getElementById("crForm"), crMailEl = document.getElementById("crMail");
+  var wfRunning = false;
+
+  function openCR(btn){
+    crState.load = btn.getAttribute("data-cr");
+    crState.from = btn.getAttribute("data-from");
+    crState.origin = btn.getAttribute("data-origin");
+    document.getElementById("crLoad").textContent = crState.load;
+    document.getElementById("crTypeSel").value = "addr";
+    document.getElementById("crCity").value = "";
+    document.getElementById("crStreet").value = "";
+    document.getElementById("crNotes").value = "";
+    document.getElementById("crDate").value = "";
+    document.getElementById("crWin").value = "";
+    document.getElementById("crStop").value = "";
+    taClose();
+    crApplyType();
+    crFormEl.hidden = false; crMailEl.hidden = true;
+    overlay.classList.add("open");
+    document.getElementById("crTypeSel").focus();
+  }
+  document.querySelectorAll(".cr-btn").forEach(function(b){ b.addEventListener("click", function(){ openCR(b); }); });
+  function closeCR(){ overlay.classList.remove("open"); }
+  document.getElementById("crClose").addEventListener("click", closeCR);
+  overlay.addEventListener("click", function(e){ if (e.target === overlay) closeCR(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && overlay.classList.contains("open")) closeCR(); });
+  var CR_FIELDS = {
+    addr:  { city: 1, street: 1, date: 0, stop: 0 },
+    add:   { city: 1, street: 1, date: 0, stop: 0 },
+    rem:   { city: 0, street: 0, date: 0, stop: 1 },
+    date:  { city: 0, street: 0, date: 1, stop: 0 },
+    other: { city: 0, street: 0, date: 0, stop: 0 }
+  };
+  function crApplyType(){
+    var f = CR_FIELDS[document.getElementById("crTypeSel").value] || CR_FIELDS.other;
+    document.getElementById("crCityF").style.display = f.city ? "" : "none";
+    document.getElementById("crStreetF").style.display = f.street ? "" : "none";
+    document.getElementById("crDateF").style.display = f.date ? "" : "none";
+    document.getElementById("crStopF").style.display = f.stop ? "" : "none";
+  }
+  document.getElementById("crTypeSel").addEventListener("change", crApplyType);
+
+  var MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  function fmtDate(iso){
+    var p = (iso || "").split("-");
+    if (p.length !== 3) return iso || "";
+    var m = parseInt(p[1], 10) - 1, d = parseInt(p[2], 10);
+    return lang === "es" ? d + " " + MONTHS_ES[m] + " " + p[0] : MONTHS_EN[m] + " " + d + ", " + p[0];
+  }
+
+  /* mini city typeahead — demo twin of the portal's CityTypeahead (type to filter, arrows + Enter, click to pick) */
+  var CITIES = ["Abilene, TX","Amarillo, TX","Arlington, TX","Austin, TX","Beaumont, TX","Brownsville, TX",
+    "Corpus Christi, TX","Dallas, TX","El Paso, TX","Fort Worth, TX","Frisco, TX","Garland, TX","Houston, TX",
+    "Irving, TX","Killeen, TX","Laredo, TX","Lawton, OK","Lubbock, TX","McAllen, TX","McKinney, TX","Midland, TX",
+    "Norman, OK","Odessa, TX","Oklahoma City, OK","Plano, TX","San Antonio, TX","Tulsa, OK","Tyler, TX","Waco, TX","Wichita Falls, TX"];
+  var cityIn = document.getElementById("crCity"), cityPop = document.getElementById("crCityPop");
+  var taHi = -1, taOpts = [];
+  function taClose(){ cityPop.classList.remove("open"); cityPop.innerHTML = ""; cityIn.setAttribute("aria-expanded", "false"); taHi = -1; taOpts = []; }
+  function taPick(v){ cityIn.value = v; taClose(); cityIn.focus(); }
+  function taRender(){
+    var q = cityIn.value.trim().toLowerCase();
+    if (!q){ taClose(); return; }
+    var starts = CITIES.filter(function(c){ return c.toLowerCase().indexOf(q) === 0; });
+    var contains = CITIES.filter(function(c){ return c.toLowerCase().indexOf(q) > 0; });
+    var list = starts.concat(contains).slice(0, 8);
+    if (!list.length){ taClose(); return; }
+    cityPop.innerHTML = "";
+    taOpts = list.map(function(c){
+      var d = document.createElement("div");
+      d.className = "ta-opt"; d.setAttribute("role", "option");
+      var ix = c.toLowerCase().indexOf(q);
+      d.appendChild(document.createTextNode(c.slice(0, ix)));
+      var b = document.createElement("b"); b.textContent = c.slice(ix, ix + q.length); d.appendChild(b);
+      d.appendChild(document.createTextNode(c.slice(ix + q.length)));
+      d.addEventListener("mousedown", function(e){ e.preventDefault(); taPick(c); });
+      cityPop.appendChild(d);
+      return d;
+    });
+    taHi = -1;
+    cityPop.classList.add("open");
+    cityIn.setAttribute("aria-expanded", "true");
+  }
+  cityIn.addEventListener("input", taRender);
+  cityIn.addEventListener("keydown", function(e){
+    if (!cityPop.classList.contains("open")){ if (e.key === "ArrowDown") taRender(); return; }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      taHi = e.key === "ArrowDown" ? Math.min(taHi + 1, taOpts.length - 1) : Math.max(taHi - 1, 0);
+      taOpts.forEach(function(o, i){ o.classList.toggle("hi", i === taHi); });
+      if (taOpts[taHi]) taOpts[taHi].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter"){
+      if (taHi >= 0 && taOpts[taHi]){ e.preventDefault(); taPick(taOpts[taHi].textContent); }
+      else if (taOpts.length === 1){ e.preventDefault(); taPick(taOpts[0].textContent); }
+    } else if (e.key === "Escape"){ e.stopPropagation(); taClose(); }
+  });
+  cityIn.addEventListener("blur", function(){ setTimeout(taClose, 120); });
+
+  var TYPE_LABEL = { addr: "NEW DELIVERY ADDRESS", add: "ADD STOP", rem: "REMOVE STOP", date: "DATE CHANGE", other: "OTHER" };
+  document.getElementById("crGen").addEventListener("click", function(){
+    var type = document.getElementById("crTypeSel").value;
+    var city = document.getElementById("crCity").value.trim() || "Tulsa, OK";
+    var street = document.getElementById("crStreet").value.trim();
+    var notes = document.getElementById("crNotes").value.trim();
+    var ndate = document.getElementById("crDate").value || "2026-09-02";
+    var nwin = document.getElementById("crWin").value.trim();
+    var stop = document.getElementById("crStop").value.trim();
+    var lines = [
+      "LOAD: " + crState.load,
+      "CHANGE-TYPE: " + TYPE_LABEL[type]
+    ];
+    if (type === "addr" || type === "add"){
+      lines.push("NEW-DESTINATION: " + city);
+      if (street) lines.push("STREET: " + street);
+    }
+    if (type === "date"){
+      lines.push("NEW-DATE: " + ndate);
+      if (nwin) lines.push("APPT-WINDOW: " + nwin);
+    }
+    if (type === "rem") lines.push("STOP: " + (stop || "(see notes)"));
+    if (notes) lines.push("NOTES: " + notes);
+    lines.push("", "-- sent from the Truckers Corner tracking page --");
+    document.getElementById("crSubj").textContent = crState.load + " · Change request";
+    document.getElementById("crBody").textContent = lines.join("\n");
+    crState.type = type; crState.dest = city; crState.ndate = ndate; crState.nwin = nwin; crState.stop = stop;
+    crFormEl.hidden = true; crMailEl.hidden = false;
+  });
+
+  function setDiffTexts(){
+    var L = document.getElementById("dcChangeL"), o = document.getElementById("dcOld"), n = document.getElementById("dcNew");
+    if (crState.type === "date"){
+      L.textContent = t("dcChangeDate"); o.textContent = t("dcCurrent");
+      n.textContent = fmtDate(crState.ndate) + (crState.nwin ? " · " + crState.nwin : "");
+    } else if (crState.type === "rem"){
+      L.textContent = t("dcChangeStop"); o.textContent = crState.stop || t("dcSeeNotes"); n.textContent = t("dcRemoved");
+    } else if (crState.type === "other"){
+      L.textContent = t("dcChangeOther"); o.textContent = "—"; n.textContent = t("dcSeeNotes");
+    } else {
+      L.textContent = t("dcChangeAddr"); o.textContent = crState.from; n.textContent = crState.dest || "Tulsa, OK";
+    }
+  }
+
+  var wfStepsEls = Array.prototype.slice.call(document.querySelectorAll(".wfstep"));
+  function wfReset(){
+    wfStepsEls.forEach(function(s){ s.classList.remove("done", "now"); });
+    document.getElementById("diffCard").classList.remove("open");
+  }
+  function wfMark(i, cls){ if (wfStepsEls[i]) { wfStepsEls[i].classList.remove("now"); wfStepsEls[i].classList.add(cls); } }
+  function runWF(){
+    if (wfRunning) return;
+    wfRunning = true;
+    wfReset();
+    document.getElementById("wfIdleRow").hidden = true;
+    document.getElementById("dcLoadV").textContent = crState.load;
+    setDiffTexts();
+    document.querySelector(".wfsec").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+    var D = reduced ? 0 : 700;
+    [0, 1, 2].forEach(function(i){
+      setTimeout(function(){
+        wfStepsEls[i].classList.add("now");
+        if (i > 0) wfMark(i - 1, "done");
+      }, D * (i + 1));
+    });
+    setTimeout(function(){
+      wfMark(2, "done");
+      wfStepsEls[3].classList.add("now");
+      document.getElementById("diffCard").classList.add("open");
+    }, D * 4 + 50);
+  }
+  document.getElementById("crSend").addEventListener("click", function(){ closeCR(); runWF(); });
+  document.getElementById("wfWatch").addEventListener("click", function(){
+    crState = { load: "TC-1051", from: "Oklahoma City, OK", origin: "Houston, TX", dest: "Tulsa, OK", type: "addr" };
+    runWF();
+  });
+  document.getElementById("dcApprove").addEventListener("click", function(){
+    if (!wfStepsEls[3].classList.contains("now")) return;
+    wfMark(3, "done");
+    var D = reduced ? 0 : 600;
+    setTimeout(function(){ wfStepsEls[4].classList.add("now"); }, D);
+    setTimeout(function(){ wfMark(4, "done"); wfStepsEls[5].classList.add("now"); }, D * 2);
+    setTimeout(function(){
+      wfMark(5, "done");
+      setToast(t("crToastB"), crState.load + " — " + t("crToastS"));
+      // reflect the new lane on the load card
+      var card = document.getElementById(crState.load === "TC-1047" ? "ld47" : "ld51");
+      if (card){
+        var laneEl = card.querySelector(".lane");
+        if (laneEl && laneEl.childNodes.length){
+          if (crState.type === "addr") laneEl.childNodes[0].nodeValue = crState.origin + " → " + (crState.dest || "Tulsa, OK");
+          if (!card.querySelector(".lane-upd")){
+            var badge = document.createElement("span");
+            badge.className = "lane-upd";
+            badge.textContent = t("laneUpdated");
+            laneEl.appendChild(badge);
+          }
+        }
+      }
+      document.getElementById("wfIdleRow").hidden = false;
+      wfRunning = false;
+    }, D * 3);
+  });
 
   applyLang();
 })();
